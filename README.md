@@ -105,6 +105,22 @@ Highlights include:
 
 Animations are primarily powered by **Framer Motion**.
 
+## 📝 Feedback Review System
+
+Only Cards includes a local feedback/reporting product for beta testing:
+
+- Players can submit Bug / Glitch, Gameplay issue, UI / Mobile issue, Feature suggestion, or General feedback reports from inside the app.
+- Reports are stored in PostgreSQL through Prisma and can include safe diagnostics such as page, device/browser, viewport, room ID, and minimal game state.
+- Admins can review, filter, inspect, and update report statuses at `/admin/feedback`.
+- Admin access is enforced by the server. Set `ADMIN_USERNAMES` or `ADMIN_USER_IDS` in `.env` to allow specific owners. In local non-production runs, the built-in `admin` account is allowed automatically.
+
+Local admin default:
+
+```text
+username: admin
+password: admin@admin
+```
+
 ---
 
 ## 🔊 Dynamic Audio

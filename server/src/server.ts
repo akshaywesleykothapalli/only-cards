@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import { SocketManager } from './network/SocketManager';
 import { AuthService } from './services/AuthService';
 import { prisma } from './services/db';
+import { FeedbackService, createFeedbackSchema, feedbackListQuerySchema, feedbackStatusSchema } from './services/FeedbackService';
 
 // This process is launched with cwd set to server/ (via `npm --prefix
 // server`), but the monorepo's shared .env lives at the repo root. Resolve
@@ -30,7 +31,7 @@ const corsOrigin = allowedOrigins.length > 0 && allowedOrigins[0] !== '*' ? allo
 
 app.use(cors({
   origin: corsOrigin,
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PATCH'],
   // Browsers reject a wildcard origin combined with credentials. Sessions use
   // bearer tokens, so credentials are only needed for an explicitly allowlisted deployment.
   credentials: corsOrigin !== '*'
@@ -61,6 +62,40 @@ function requireAuthenticatedUser(req: express.Request, res: express.Response): 
     res.status(401).json({ success: false, message: 'Authentication required' });
     return null;
   }
+  return userId;
+}
+
+function configuredAdminUsernames(): string[] {
+  const configured = process.env.ADMIN_USERNAMES
+    ? process.env.ADMIN_USERNAMES.split(',').map(value => value.trim()).filter(Boolean)
+    : [];
+  if (process.env.NODE_ENV !== 'production' && !configured.includes('admin')) {
+    configured.push('admin');
+  }
+  return configured;
+}
+
+function configuredAdminUserIds(): string[] {
+  return process.env.ADMIN_USER_IDS
+    ? process.env.ADMIN_USER_IDS.split(',').map(value => value.trim()).filter(Boolean)
+    : [];
+}
+
+async function requireAdminUser(req: express.Request, res: express.Response): Promise<string | null> {
+  const userId = requireAuthenticatedUser(req, res);
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true } });
+  const isAdmin = Boolean(
+    user &&
+    (configuredAdminUserIds().includes(user.id) || configuredAdminUsernames().includes(user.username))
+  );
+
+  if (!isAdmin) {
+    res.status(403).json({ success: false, message: 'Admin access required' });
+    return null;
+  }
+
   return userId;
 }
 
@@ -238,6 +273,64 @@ app.get('/api/profile/:userId', async (req, res) => {
     res.json({ success: true, profile });
   } catch (err: any) {
     res.status(500).json({ success: false, message: 'Failed to load user stats', error: err.message });
+  }
+});
+
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const payload = createFeedbackSchema.parse(req.body);
+    const feedback = await FeedbackService.create(payload, authenticatedUserId(req));
+    res.status(201).json({ success: true, feedback });
+  } catch (err: any) {
+    console.error('Create feedback error:', err);
+    const message = err instanceof z.ZodError ? err.issues[0].message : 'Unable to submit feedback';
+    res.status(err instanceof z.ZodError ? 400 : 500).json({ success: false, message });
+  }
+});
+
+app.get('/api/admin/feedback', async (req, res) => {
+  try {
+    const adminUserId = await requireAdminUser(req, res);
+    if (!adminUserId) return;
+    const query = feedbackListQuerySchema.parse(req.query);
+    const result = await FeedbackService.list(query);
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    console.error('List feedback error:', err);
+    const message = err instanceof z.ZodError ? err.issues[0].message : 'Unable to load feedback';
+    res.status(err instanceof z.ZodError ? 400 : 500).json({ success: false, message });
+  }
+});
+
+app.get('/api/admin/feedback/:id', async (req, res) => {
+  try {
+    const adminUserId = await requireAdminUser(req, res);
+    if (!adminUserId) return;
+    const feedback = await FeedbackService.getById(req.params.id);
+    if (!feedback) {
+      return res.status(404).json({ success: false, message: 'Feedback not found' });
+    }
+    res.json({ success: true, feedback });
+  } catch (err: any) {
+    console.error('Get feedback error:', err);
+    res.status(500).json({ success: false, message: 'Unable to load feedback' });
+  }
+});
+
+app.patch('/api/admin/feedback/:id/status', async (req, res) => {
+  try {
+    const adminUserId = await requireAdminUser(req, res);
+    if (!adminUserId) return;
+    const { status } = feedbackStatusSchema.parse(req.body);
+    const feedback = await FeedbackService.updateStatus(req.params.id, status);
+    res.json({ success: true, feedback });
+  } catch (err: any) {
+    console.error('Update feedback status error:', err);
+    if (err?.code === 'P2025') {
+      return res.status(404).json({ success: false, message: 'Feedback not found' });
+    }
+    const message = err instanceof z.ZodError ? err.issues[0].message : 'Unable to update feedback';
+    res.status(err instanceof z.ZodError ? 400 : 500).json({ success: false, message });
   }
 });
 
