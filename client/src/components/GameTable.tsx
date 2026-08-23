@@ -115,6 +115,7 @@ export default function GameTable() {
   const [showColorSelector, setShowColorSelector] = useState(false);
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [drawnPlayableCardId, setDrawnPlayableCardId] = useState<string | null>(null);
+  const [pendingPlayCardId, setPendingPlayCardId] = useState<string | null>(null);
   const [showChatPanel, setShowChatPanel] = useState(false);
   const [showLogsPanel, setShowLogsPanel] = useState(false);
   const [chatText, setChatText] = useState('');
@@ -233,6 +234,10 @@ export default function GameTable() {
       }, 600);
     }
   }, [gameState?.activeSide, previousSide, audio]);
+
+  useEffect(() => {
+    setPendingPlayCardId(null);
+  }, [gameState]);
 
   const isCompactPhoneTable = viewport.width < 768 || (viewport.width <= 1024 && viewport.height <= 560);
 
@@ -384,6 +389,8 @@ export default function GameTable() {
   const canDraw = isMyTurn && playableCardIds.length === 0 && drawnPlayableCardId === null;
 
   const handleCardPlayAttempt = (cardId: string) => {
+    if (pendingPlayCardId) return;
+
     const card = me?.cards.find(c => c.id === cardId);
     if (!card) return;
 
@@ -394,6 +401,7 @@ export default function GameTable() {
       setShowColorSelector(true);
     } else {
       audio.playPlayCard();
+      setPendingPlayCardId(cardId);
       playCard(cardId);
       setDrawnPlayableCardId(null);
     }
@@ -401,7 +409,10 @@ export default function GameTable() {
 
   const handleSelectColor = (color: CardColor) => {
     if (!pendingWildCardId) return;
+    if (pendingPlayCardId) return;
+
     audio.playPlayCard();
+    setPendingPlayCardId(pendingWildCardId);
     playCard(pendingWildCardId, color);
     setShowColorSelector(false);
     setPendingWildCardId(null);
@@ -949,7 +960,7 @@ export default function GameTable() {
               cards={me?.cards || []}
               playableCardIds={playableCardIds}
               onPlayCard={handleCardPlayAttempt}
-              disabled={!isMyTurn}
+              disabled={!isMyTurn || pendingPlayCardId !== null}
               activeSide={gameState.activeSide}
               compact={isPhoneTable}
             />

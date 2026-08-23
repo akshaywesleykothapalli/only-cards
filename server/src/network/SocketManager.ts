@@ -281,6 +281,7 @@ export class SocketManager {
           this.logAuditEvent('PLAY_CARD', { userId, roomId, cardId: data.cardId, chosenColor: data.chosenColor });
         } else {
           socket.emit('action_error', 'Invalid card play sequence');
+          this.emitGameStateToSocket(socket, userId, room.engine.getState());
           this.logAuditEvent('PLAY_CARD_FAILED', { userId, roomId, cardId: data.cardId, reason: 'Invalid play' });
         }
       } finally {
