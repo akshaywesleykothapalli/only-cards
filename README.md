@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="YOUR_DEPLOYED_URL">
+  <a href="https://only-cards-42ch.vercel.app/">
     <img src="https://img.shields.io/badge/▶_PLAY_LIVE-22C55E?style=for-the-badge" />
   </a>
 </p>
@@ -342,7 +342,7 @@ Example:
 ## 🌐 Live Deployment
 
 <p align="center">
-  <a href="YOUR_DEPLOYED_URL">
+  <a href="https://only-cards-42ch.vercel.app/">
     <img src="https://img.shields.io/badge/🃏_PLAY_ONLY_CARDS-LIVE_NOW-22C55E?style=for-the-badge" />
   </a>
 </p>
