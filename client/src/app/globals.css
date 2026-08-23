@@ -1,0 +1,374 @@
+@import '../components/BorderGlow.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --color-red: #ea4335;
+  --color-blue: #0099ff;
+  --color-yellow: #f59e0b;
+  --color-green: #10b981;
+  --color-wild: #111115;
+  --font-body: ui-rounded, "SF Pro Rounded", "Avenir Next", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Arial Rounded MT Bold", "Avenir Next", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
+
+  /* Game table responsive positioning - all distances from center point */
+  --table-side-gap: clamp(16px, 4vw, 80px);
+  --table-top-gap: clamp(24px, 6vh, 80px);
+  --table-bottom-gap: clamp(24px, 6vh, 80px);
+}
+
+body {
+  background: radial-gradient(circle at 35% 35%, #2a0a0e 0%, #050508 100%);
+  color: #f3f4f6;
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Arena Background Gradient helper */
+.bg-arena-gradient {
+  background: radial-gradient(circle at 35% 35%, #2a0a0e 0%, #050508 100%);
+}
+
+/* Glassmorphism panels - extremely clean, minimal borders */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 767px) {
+  .glass-card:hover {
+    transform: none;
+  }
+}
+
+/* Premium card face styles */
+.card-arena {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.25s ease;
+}
+
+.card-arena-red {
+  background-color: #ea4335;
+}
+.card-arena-blue {
+  background-color: #0099ff;
+}
+.card-arena-green {
+  background-color: #10b981;
+}
+.card-arena-yellow {
+  background-color: #f59e0b;
+}
+.card-arena-wild {
+  background-color: #111115;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Slanted white oval card insert */
+.card-oval-insert {
+  width: 78%;
+  height: 62%;
+  background: #ffffff;
+  border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+  transform: rotate(-15deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.card-oval-value {
+  transform: rotate(15deg); /* Counter-rotate value to render upright */
+  font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+  font-weight: 700; /* Helvetica Neue Bold */
+  color: #0b1a24;
+  font-size: 1.75rem; /* Increased from 1.5rem */
+}
+
+.card-corner-number {
+  font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+  font-weight: 700; /* Helvetica Neue Bold */
+  font-size: 1.25rem; /* Increased from 1rem */
+}
+
+.player-card-size,
+.table-card-size {
+  width: 4.5rem;
+  height: 7rem;
+}
+
+.opponent-card-size {
+  width: 4rem;
+  height: 6rem;
+}
+
+@media (min-width: 640px) {
+  .player-card-size,
+  .table-card-size {
+    width: 7rem;
+    height: 10rem;
+  }
+
+  .opponent-card-size {
+    width: 7rem;
+    height: 10rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 1024px) {
+  .ready-mode-grid {
+    align-items: stretch;
+  }
+
+  .ready-custom-room-card {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(48%, 27rem);
+  }
+
+  .player-card-size {
+    width: 4.35rem;
+    height: 6.22rem;
+  }
+
+  .table-card-size {
+    width: 3.85rem;
+    height: 5.5rem;
+  }
+
+  .opponent-card-size {
+    width: 3.15rem;
+    height: 4.5rem;
+  }
+
+  .card-corner-number {
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .card-oval-value {
+    font-size: 1.52rem;
+    line-height: 1;
+  }
+
+  .table-card-size .card-oval-value {
+    font-size: 1.35rem;
+  }
+
+  .player-card-size,
+  .table-card-size,
+  .opponent-card-size {
+    border-radius: 1.05rem !important;
+  }
+
+  .player-card-size .card-oval-insert,
+  .table-card-size .card-oval-insert {
+    width: 78% !important;
+    height: 62% !important;
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.16),
+      0 1px 10px rgba(255, 255, 255, 0.18);
+  }
+
+  .opponent-card-size .card-back-label,
+  .table-card-size .card-back-label {
+    font-size: 0.78rem !important;
+    line-height: 1 !important;
+    letter-spacing: -0.06em !important;
+  }
+
+  .compact-action-row {
+    min-height: 32px !important;
+    gap: 0.35rem !important;
+    max-width: 320px !important;
+  }
+
+  .compact-action-row > div,
+  .compact-action-row > button {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    padding-left: 0.6rem !important;
+    padding-right: 0.6rem !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.12em !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  }
+
+  .compact-action-row > div {
+    gap: 0.25rem !important;
+  }
+
+  .compact-action-row > div button {
+    font-size: 0.78rem !important;
+    line-height: 1 !important;
+  }
+
+  .compact-player-hand {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.25rem !important;
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+  }
+
+  .compact-player-hand > div {
+    padding-top: 0.55rem !important;
+    padding-bottom: 0.55rem !important;
+  }
+
+  .compact-player-hand .card-oval-insert {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Arena Premium Button Redesigns (Red and Black Theme) */
+.btn-arena-primary {
+  background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+  color: #ffffff;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+}
+
+.btn-arena-primary:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+
+.btn-arena-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-arena-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-display);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-arena-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.btn-arena-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.02); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Ambient dynamic background grids */
+.bg-grid {
+  background-size: 60px 60px;
+  background-image: 
+    linear-gradient(to right, rgba(239, 68, 68, 0.007) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(239, 68, 68, 0.007) 1px, transparent 1px);
+}
+
+.glow-effect {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+@media (max-width: 767px) {
+  .glow-effect {
+    filter: blur(80px);
+    transform: scale(0.72);
+  }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

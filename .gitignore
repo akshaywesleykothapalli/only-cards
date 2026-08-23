@@ -1,0 +1,17 @@
+# Local configuration and secrets
+.env
+.env.local
+
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local tool state
+.claude/scheduled_tasks.lock
+
+# SQLite dev artifact, superseded by Postgres (see DATABASE_URL)
+*.db
+.claude/scheduled_tasks.lock

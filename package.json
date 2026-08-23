@@ -1,0 +1,26 @@
+{
+  "name": "cards-reimagined-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && npm install --prefix shared && npm install --prefix server && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:shared": "npm run build --prefix shared",
+    "build:server": "npm run build --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
+    "start:server": "npm run start --prefix server",
+    "start:client": "npm run start --prefix client",
+    "db:generate": "npm run db:generate --prefix server",
+    "db:push": "npm run db:push --prefix server",
+    "db:migrate": "npm run db:migrate --prefix server",
+    "test": "npm run test --prefix server",
+    "typecheck": "npm run typecheck --prefix shared && npm run typecheck --prefix server && npm run typecheck --prefix client",
+    "verify": "npm run build:shared && npm run test && npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

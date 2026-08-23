@@ -1,0 +1,45 @@
+name: UNO Reimagined CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-node: '20'
+        cache: 'npm'
+
+    - name: Install Workspace Dependencies
+      run: |
+        npm install
+        npm run install:all
+
+    - name: Compile Shared Library
+      run: npm run build:shared
+
+    - name: Generate Prisma Client
+      run: |
+        cd server
+        npx prisma generate
+
+    - name: Execute Server Unit Tests
+      run: |
+        cd server
+        npm run test
+
+    - name: Compile Server Build
+      run: npm run build:server
+
+    - name: Compile Client Build
+      run: npm run build:client
