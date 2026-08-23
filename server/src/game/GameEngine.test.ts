@@ -75,6 +75,29 @@ describe('GameEngine State Machine tests', () => {
     expect(state.activeColor).toBe(state.discardPile[0].lightFace.color);
   });
 
+  it('should block wild and draw-two cards from opening the center deck', () => {
+    const engine = new GameEngine('room_initial_card', dummyPlayers, dummyRules);
+    const blocksInitialCard = (card: any) => (engine as any).isBlockedInitialCard(card);
+
+    expect(blocksInitialCard({
+      id: 'plus_two_start',
+      lightFace: { color: 'RED', value: 'DRAW_TWO' },
+      darkFace: { color: 'RED', value: 'DRAW_TWO' }
+    })).toBe(true);
+
+    expect(blocksInitialCard({
+      id: 'wild_start',
+      lightFace: { color: 'WILD', value: 'WILD' },
+      darkFace: { color: 'WILD', value: 'WILD' }
+    })).toBe(true);
+
+    expect(blocksInitialCard({
+      id: 'safe_start',
+      lightFace: { color: 'BLUE', value: '7' },
+      darkFace: { color: 'BLUE', value: '7' }
+    })).toBe(false);
+  });
+
   it('should successfully cycle turns', () => {
     const engine = new GameEngine('room2', dummyPlayers, dummyRules);
     engine.startMatch();

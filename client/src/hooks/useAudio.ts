@@ -68,6 +68,77 @@ export function useAudio() {
     });
   };
 
+  const createNoiseBuffer = (ctx: AudioContext, duration: number) => {
+    const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < sampleCount; i++) {
+      const fade = 1 - i / sampleCount;
+      data[i] = (Math.random() * 2 - 1) * fade * fade;
+    }
+    return buffer;
+  };
+
+  const playCardFoley = (variant: 'draw' | 'play') => {
+    if (muteRef.current) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const duration = variant === 'draw' ? 0.24 : 0.15;
+    const source = ctx.createBufferSource();
+    const bodyFilter = ctx.createBiquadFilter();
+    const polishFilter = ctx.createBiquadFilter();
+    const gainNode = ctx.createGain();
+    const polishGain = ctx.createGain();
+
+    source.buffer = createNoiseBuffer(ctx, duration);
+    source.playbackRate.setValueAtTime(variant === 'draw' ? 0.92 : 1.04, now);
+
+    bodyFilter.type = 'lowpass';
+    bodyFilter.frequency.setValueAtTime(variant === 'draw' ? 1320 : 1180, now);
+    bodyFilter.frequency.exponentialRampToValueAtTime(variant === 'draw' ? 760 : 680, now + duration);
+    bodyFilter.Q.setValueAtTime(0.42, now);
+
+    polishFilter.type = 'bandpass';
+    polishFilter.frequency.setValueAtTime(variant === 'draw' ? 1850 : 1600, now);
+    polishFilter.Q.setValueAtTime(0.55, now);
+
+    gainNode.gain.setValueAtTime(0.0001, now);
+    gainNode.gain.linearRampToValueAtTime(volumeRef.current * (variant === 'draw' ? 0.13 : 0.18), now + 0.035);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.025);
+
+    polishGain.gain.setValueAtTime(0.0001, now);
+    polishGain.gain.linearRampToValueAtTime(volumeRef.current * (variant === 'draw' ? 0.025 : 0.04), now + 0.02);
+    polishGain.gain.exponentialRampToValueAtTime(0.0001, now + (variant === 'draw' ? 0.16 : 0.095));
+
+    source.connect(bodyFilter);
+    bodyFilter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    source.connect(polishFilter);
+    polishFilter.connect(polishGain);
+    polishGain.connect(ctx.destination);
+
+    if (variant === 'play') {
+      const tap = ctx.createOscillator();
+      const tapGain = ctx.createGain();
+      tap.type = 'triangle';
+      tap.frequency.setValueAtTime(72, now);
+      tap.frequency.exponentialRampToValueAtTime(48, now + 0.06);
+      tapGain.gain.setValueAtTime(0.0001, now);
+      tapGain.gain.linearRampToValueAtTime(volumeRef.current * 0.035, now + 0.012);
+      tapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+      tap.connect(tapGain);
+      tapGain.connect(ctx.destination);
+      tap.start(now);
+      tap.stop(now + 0.075);
+    }
+
+    source.start(now);
+    source.stop(now + duration + 0.03);
+  };
+
   // 1. Play Hover click
   const playHover = () => {
     playSynthNode([600], [0.03], 'sine', 0.2);
@@ -80,38 +151,12 @@ export function useAudio() {
 
   // 3. Play Draw card sound
   const playDraw = () => {
-    if (muteRef.current) return;
-    const ctx = getCtx();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.15);
-    gainNode.gain.setValueAtTime(volumeRef.current * 0.15, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    playCardFoley('draw');
   };
 
   // 4. Play Discard/Play card sound
   const playPlayCard = () => {
-    if (muteRef.current) return;
-    const ctx = getCtx();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.12);
-    gainNode.gain.setValueAtTime(volumeRef.current * 0.3, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    playCardFoley('play');
   };
 
   // 5. Play Warning Timer Alert

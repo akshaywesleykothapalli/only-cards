@@ -80,8 +80,8 @@ export class GameEngine {
 
     // Flip first card
     let initialCard = this.deck.pop();
-    while (initialCard && this.getActiveFace(initialCard).color === 'WILD') {
-      // Put back and shuffle if first card is a Wild to keep start simple
+    while (initialCard && this.isBlockedInitialCard(initialCard)) {
+      // Put back and shuffle if first card would make the opening turn awkward.
       this.deck.unshift(initialCard);
       this.deck = shuffle(this.deck);
       initialCard = this.deck.pop();
@@ -108,6 +108,11 @@ export class GameEngine {
 
     this.recordReplayFrame('START_MATCH');
     this.notifyStateChange();
+  }
+
+  private isBlockedInitialCard(card: Card): boolean {
+    const face = this.getActiveFace(card);
+    return face.color === 'WILD' || face.value === 'DRAW_TWO';
   }
 
   private applyInitialCardAction(card: Card) {

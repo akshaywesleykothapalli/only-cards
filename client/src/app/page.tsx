@@ -126,7 +126,7 @@ const SwipeableCardWrapper = ({
   cards,
   isSwiped,
   swipeDir,
-  playFlip,
+  playCardMove,
   onSwipeOff,
   onRemoveCard,
   children
@@ -136,7 +136,7 @@ const SwipeableCardWrapper = ({
   cards: any[];
   isSwiped: boolean;
   swipeDir: 'left' | 'right';
-  playFlip: () => void;
+  playCardMove: () => void;
   onSwipeOff: (id: number, dir: 'left' | 'right') => void;
   onRemoveCard: (id: number) => void;
   children: React.ReactNode;
@@ -179,7 +179,7 @@ const SwipeableCardWrapper = ({
   const handleDragEnd = () => {
     const currentX = x.get();
     if (Math.abs(currentX) > 80) {
-      playFlip();
+      playCardMove();
       const dir = currentX > 0 ? 'right' : 'left';
       onSwipeOff(id, dir);
     }
@@ -193,7 +193,7 @@ const SwipeableCardWrapper = ({
 
   const handleTap = () => {
     if (isFront && !isSwiped) {
-      playFlip();
+      playCardMove();
       // Direction matches the card's visual tilt: even id tilts +5deg (right), odd tilts -5deg (left)
       const dir: 'left' | 'right' = id % 2 === 0 ? 'right' : 'left';
       onSwipeOff(id, dir);
@@ -288,7 +288,7 @@ export default function Page() {
     const activeCards = swipeCards.filter(card => !card.isSwiped);
     const topCard = activeCards[activeCards.length - 1];
     if (!topCard) return;
-    playFlip();
+    playPlayCard();
     handleSwipeOff(topCard.id, topCard.id % 2 === 0 ? 'right' : 'left');
   };
 
@@ -309,7 +309,7 @@ export default function Page() {
   const cursorX = useMotionTemplate`${mouseX}px - 128px`;
   const cursorY = useMotionTemplate`${mouseY}px - 128px`;
 
-  const { playSelect, playHover, playFlip } = useAudio();
+  const { playSelect, playHover, playPlayCard } = useAudio();
 
   // Mouse move effect for cursor following
   useEffect(() => {
@@ -372,16 +372,16 @@ export default function Page() {
 
                     {/* Description */}
                     <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl leading-relaxed mb-8 sm:mb-10 font-medium">
-                      <span className="text-red-400 font-bold">10,000+</span> players online. <span className="text-red-400 font-bold">500K+</span> matches played daily.
-                      No downloads. No waiting. Pure competitive card action.
+                      Browser-based card battles with private rooms, quick practice, and real-time turns.
+                      No downloads. No fake numbers. Just play.
                     </p>
 
-                    {/* Stats Row */}
+                    {/* Feature Row */}
                     <div className="grid grid-cols-3 items-start justify-center gap-3 sm:flex sm:items-center sm:gap-8 md:gap-16 mb-10 sm:mb-12">
                       {[
-                        { value: 10000, suffix: '+', label: 'Players Online', color: 'text-red-400' },
-                        { value: 500, suffix: 'K+', label: 'Daily Matches', color: 'text-blue-400' },
-                        { value: 99.9, suffix: '%', decimals: 1, label: 'Uptime', color: 'text-green-400' }
+                        { value: '6 DIGIT', label: 'Private Rooms', color: 'text-red-400' },
+                        { value: 'REAL-TIME', label: 'Turn Sync', color: 'text-blue-400' },
+                        { value: 'NO INSTALL', label: 'Browser Play', color: 'text-green-400' }
                       ].map((stat, index) => (
                         <motion.div
                           key={index}
@@ -391,7 +391,7 @@ export default function Page() {
                           className="text-center"
                         >
                           <div className={`text-2xl sm:text-3xl md:text-4xl font-black ${stat.color} mb-1`}>
-                            <AnimatedStatNumber value={stat.value} suffix={stat.suffix} decimals={stat.decimals ?? 0} />
+                            {stat.value}
                           </div>
                           <div className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider font-semibold">
                             {stat.label}
@@ -749,7 +749,7 @@ export default function Page() {
                     cards={swipeCards}
                     isSwiped={card.isSwiped}
                     swipeDir={card.swipeDir}
-                    playFlip={playFlip}
+                    playCardMove={playPlayCard}
                     onSwipeOff={handleSwipeOff}
                     onRemoveCard={handleRemoveCard}
                   >
@@ -921,8 +921,8 @@ export default function Page() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-base text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed font-medium"
             >
-              Join <span className="text-red-400 font-bold">10,000+</span> players competing in real-time card battles.
-              Your journey to the top starts with a single click.
+              Create a private room, invite friends with a six-digit code, or jump into practice.
+              Your next match starts with a single click.
             </motion.p>
             <motion.button
               onClick={handleStartPlaying}

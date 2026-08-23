@@ -10,14 +10,23 @@ import { QueuedPlayer } from './MatchmakingQueue';
 const validAiDifficulties = new Set<AiDifficulty>(['Easy', 'Medium', 'Hard', 'Expert']);
 const validAiPersonalities = new Set<AiPersonality>(['Strategist', 'Aggressive', 'Defensive', 'Chaotic', 'Troll']);
 
-// Cryptographically secure alphanumeric code, used for room ids and AI ids so
-// they can't be brute-forced or predicted the way Math.random() output can.
+// Cryptographically secure alphanumeric code, used for AI ids so they can't be
+// brute-forced or predicted the way Math.random() output can.
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function secureCode(length: number): string {
   const bytes = randomBytes(length);
   let out = '';
   for (let i = 0; i < length; i++) {
     out += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+  }
+  return out;
+}
+
+function secureNumericCode(length: number): string {
+  const bytes = randomBytes(length);
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    out += String(bytes[i] % 10);
   }
   return out;
 }
@@ -95,6 +104,14 @@ export class RoomManager {
     return true;
   }
 
+  private createUniqueRoomCode(): string {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const roomId = secureNumericCode(6);
+      if (!this.rooms.has(roomId)) return roomId;
+    }
+    throw new Error('Unable to allocate a unique room code');
+  }
+
   async createRoom(socket: Socket, userId: string, data: { rules: MatchRules; isOffline?: boolean; aiDifficulty?: AiDifficulty }) {
     if (!this.hasValidRules(data?.rules)) {
       socket.emit('action_error', 'Invalid match settings');
@@ -118,7 +135,14 @@ export class RoomManager {
     }
     const username = profile?.user.username || 'Guest';
 
-    const roomId = `room_${secureCode(6)}`;
+    let roomId: string;
+    try {
+      roomId = this.createUniqueRoomCode();
+    } catch (err) {
+      console.error('createRoom: failed to allocate room code', err);
+      socket.emit('action_error', 'Unable to create room right now, please try again');
+      return;
+    }
 
     const players: Player[] = [
       {
@@ -243,10 +267,9 @@ export class RoomManager {
   }
 
   async joinRoom(socket: Socket, userId: string, data: { roomId: string }) {
-    const roomCode = typeof data?.roomId === 'string' ? data.roomId.trim().toUpperCase() : '';
-    const requestedRoomId = roomCode.startsWith('ROOM_') ? `room_${roomCode.slice(5)}` : roomCode.startsWith('ROOM_MM_') ? `room_MM_${roomCode.slice(8)}` : '';
-    if (!/^room_(?:MM_)?[A-Z0-9]{6}$/.test(requestedRoomId)) {
-      socket.emit('join_error', { message: 'Enter a valid room code' });
+    const requestedRoomId = typeof data?.roomId === 'string' ? data.roomId.replace(/\D/g, '') : '';
+    if (!/^\d{6}$/.test(requestedRoomId)) {
+      socket.emit('join_error', { message: 'Enter a valid 6-digit room code' });
       return;
     }
 
@@ -342,7 +365,7 @@ export class RoomManager {
   // Builds and starts a ranked room once the matchmaking queue pairs two
   // players. Called by MatchmakingQueue's onPairFound callback.
   createMatchmakingRoom(p1: QueuedPlayer, p2: QueuedPlayer) {
-    const roomId = `room_MM_${secureCode(6)}`;
+    const roomId = this.createUniqueRoomCode();
     const rules: MatchRules = {
       stacking: true,
       jumpIn: true,

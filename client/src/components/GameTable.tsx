@@ -6,12 +6,11 @@ import { useAudio } from '../hooks/useAudio';
 import { Card, CardColor, Player, CardSide } from 'cards-shared';
 import PlayerHand from './PlayerHand';
 import OpponentHand from './OpponentHand';
-import AiOverlay from './AiOverlay';
 import BorderGlow from './BorderGlow';
 import { SharedNavbar } from './SharedNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Volume2, VolumeX, ShieldAlert, Cpu, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, ArrowLeft } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, ClipboardList, Send } from 'lucide-react';
 import { getCardSymbol, getCardBgHex, getCardGlowHsl, getCardGradientColors, getCardValueColor } from '../lib/cardColors';
 
 type OpponentSeatPosition = 'top' | 'left' | 'right' | 'bottom';
@@ -116,8 +115,8 @@ export default function GameTable() {
   const [showColorSelector, setShowColorSelector] = useState(false);
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [drawnPlayableCardId, setDrawnPlayableCardId] = useState<string | null>(null);
-  const [showAiOverlay, setShowAiOverlay] = useState(false);
   const [showChatPanel, setShowChatPanel] = useState(false);
+  const [showLogsPanel, setShowLogsPanel] = useState(false);
   const [chatText, setChatText] = useState('');
   const [soundMuted, setSoundMuted] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -128,6 +127,7 @@ export default function GameTable() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [viewport, setViewport] = useState({ width: 1024, height: 768, isTouch: false });
   const discardSnapshotRef = useRef<{ length: number; lastCardId: string | null } | null>(null);
+  const chatListRef = useRef<HTMLDivElement | null>(null);
   const [tableCardFlight, setTableCardFlight] = useState<{
     id: string;
     card: Card;
@@ -155,6 +155,14 @@ export default function GameTable() {
       window.removeEventListener('orientationchange', syncViewport);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showChatPanel) return;
+    chatListRef.current?.scrollTo({
+      top: chatListRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [chatMessages, showChatPanel]);
 
   const handleConfirmExit = async () => {
     setIsLeaving(true);
@@ -408,8 +416,9 @@ export default function GameTable() {
 
   const handleSendChatText = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatText.trim()) return;
-    sendChat(chatText);
+    const message = chatText.trim();
+    if (!message) return;
+    sendChat(message);
     setChatText('');
   };
 
@@ -497,11 +506,11 @@ export default function GameTable() {
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => { audio.playSelect(); setShowAiOverlay(!showAiOverlay); }}
-          className={`p-2 rounded-full transition-all border ${showAiOverlay ? 'bg-red-650/20 border-red-500 text-red-400' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
-          title="Toggle AI overlay"
+          onClick={() => { audio.playSelect(); setShowLogsPanel(!showLogsPanel); }}
+          className={`p-2 rounded-full transition-all border ${showLogsPanel ? 'bg-red-650/20 border-red-500 text-red-400' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+          title="Toggle game logs"
         >
-          <Cpu className="w-4 h-4" />
+          <ClipboardList className="w-4 h-4" />
         </button>
         <button
           onClick={() => { audio.playSelect(); setShowChatPanel(!showChatPanel); }}
@@ -556,101 +565,12 @@ export default function GameTable() {
       <div className={`glow-effect w-[550px] h-[550px] ${gameState.activeSide === 'LIGHT' ? 'bg-red-500' : 'bg-red-650'} -top-40 -left-40`} style={{ opacity: gameState.activeSide === 'LIGHT' ? 0.15 : 0.12 }} />
       <div className={`glow-effect w-[550px] h-[550px] ${gameState.activeSide === 'LIGHT' ? 'bg-blue-400' : 'bg-white'} -bottom-40 -right-40`} style={{ opacity: gameState.activeSide === 'LIGHT' ? 0.08 : 0.04 }} />
 
-      {/* Navbar hidden during game - controls moved to inline HUD */}
-
-      {/* Legacy game HUD is hidden: all required controls live in SharedNavbar. */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.42, ease: 'easeOut' }}
-        className="hidden"
-      >
-        <motion.div
-          initial={{ opacity: 0, x: -14 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.12, duration: 0.35 }}
-          className="flex items-center gap-4"
-        >
-          <button
-            onClick={() => setShowExitDialog(true)}
-            className={`p-2 rounded-full ${gameState.activeSide === 'LIGHT' ? 'bg-gray-200/50 border-gray-300 text-gray-700 hover:bg-gray-300' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'} transition-all`}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Gamepad2 className={`w-6 h-6 ${gameState.activeSide === 'LIGHT' ? 'text-red-600' : 'text-red-500'}`} />
-            <span className={`font-black text-lg tracking-tight flex items-center gap-1 ${gameState.activeSide === 'LIGHT' ? 'text-gray-900' : 'text-white'}`}>
-              ONLY <span className={gameState.activeSide === 'LIGHT' ? 'text-red-600' : 'text-red-500'}>CARDS</span>
-            </span>
-            {gameState.rules.flipMode && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${gameState.activeSide === 'LIGHT' ? 'bg-purple-100 text-purple-700' : 'bg-purple-500/20 text-purple-400'}`}>
-                FLIP MODE
-              </span>
-            )}
-          </div>
-          <span className={`text-xs font-black px-3 py-1 rounded-full tracking-wider uppercase font-mono ${gameState.activeSide === 'LIGHT' ? 'text-gray-600 bg-gray-200 border-gray-300' : 'text-red-300 bg-red-950/20 border-red-500/20'}`}>
-            ROOM {gameState.roomId}
-          </span>
-          <span className={`hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${connectionStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'}`}>
-            <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
-            {connectionStatus === 'connected' ? 'Live' : connectionStatus === 'offline' ? 'Offline' : 'Reconnecting'}
-          </span>
-        </motion.div>
-
-        {/* Turn indicator */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.86 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, type: 'spring', stiffness: 280, damping: 20 }}
-          className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider ${gameState.activeSide === 'LIGHT' ? 'bg-gray-200 border-gray-300 text-gray-700' : 'bg-white/5 border-white/10 text-gray-300'}`}
-        >
-          <span className={isMyTurn ? (gameState.activeSide === 'LIGHT' ? "text-red-600" : "text-red-400") : (gameState.activeSide === 'LIGHT' ? "text-gray-900" : "text-white")}>
-            {isMyTurn ? "Your turn" : `${currentTurnPlayer?.name}'s turn`}
-          </span>
-        </motion.div>
-
-        {/* Sound & Telemetry utilities */}
-        <motion.div
-          initial={{ opacity: 0, x: 14 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.16, duration: 0.35 }}
-          className="flex items-center gap-2"
-        >
-          <button
-            onClick={() => { audio.playSelect(); setShowAiOverlay(!showAiOverlay); }}
-            className={`p-2 rounded-full transition-all border ${
-              showAiOverlay
-                ? 'bg-red-650/20 border-red-500 text-red-400'
-                : gameState.activeSide === 'LIGHT'
-                  ? 'bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900'
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-            }`}
-            title="Toggle AI Dev overlay"
-          >
-            <Cpu className="w-4 h-4" />
-          </button>
-          
-          <button
-            onClick={() => { audio.playSelect(); setShowChatPanel(!showChatPanel); }}
-            className={`p-2 rounded-full transition-all border ${
-              showChatPanel
-                ? 'bg-red-650/20 border-red-500 text-red-400'
-                : gameState.activeSide === 'LIGHT'
-                  ? 'bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900'
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-            }`}
-          >
-            <MessagesSquare className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={toggleMute}
-            className={`p-2 rounded-full ${gameState.activeSide === 'LIGHT' ? 'bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'} transition-all`}
-          >
-            {soundMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
-          </button>
-        </motion.div>
-      </motion.nav>
+      <SharedNavbar
+        showBackButton
+        onBackClick={() => setShowExitDialog(true)}
+        customItems={[]}
+        rightActions={gameNavActions}
+      />
 
       {/* Game Table - Single Center Point Coordinate System */}
       <div className="absolute inset-0 px-2 py-6 sm:px-6 sm:py-8" style={{ perspective: '1000px' }}>
@@ -1161,28 +1081,72 @@ export default function GameTable() {
 
       </AnimatePresence>
 
-      {/* Floating AI telemetry dashboard */}
-      {showAiOverlay && (
-        <div className="absolute left-3 right-3 top-16 z-30 sm:left-6 sm:right-auto sm:w-80 sm:max-w-[calc(100vw-2rem)]">
-          <AiOverlay />
-        </div>
-      )}
-
-      {/* Chat sidebar panel overlay */}
-      {showChatPanel && (
-        <div className="absolute left-3 right-3 top-16 h-[46%] z-30 glass-panel p-4 rounded-2xl flex flex-col justify-between border border-white/10 sm:left-auto sm:right-6 sm:w-80 sm:h-[50%] sm:max-w-[calc(100vw-2rem)]">
-          <h3 className="font-extrabold text-xs uppercase tracking-widest text-gray-400 border-b border-white/5 pb-2 mb-2">Game Logs & Chat</h3>
-          <div className="flex-grow overflow-hidden pr-1 flex flex-col gap-2 max-h-[180px]">
-            {gameState.logs.slice(-10).map(log => (
-              <div key={log.id} className="text-[11px] leading-normal text-gray-400 px-2 py-1 border-l-2 border-red-500/40">
+      {/* Game logs panel overlay */}
+      {showLogsPanel && (
+        <motion.div
+          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.98 }}
+          className="absolute left-3 right-3 top-16 z-30 flex max-h-[44%] flex-col rounded-2xl border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur-xl sm:left-6 sm:right-auto sm:w-80 sm:max-w-[calc(100vw-2rem)]"
+        >
+          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
+            <h3 className="font-extrabold text-xs uppercase tracking-widest text-gray-300">Game Logs</h3>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-black text-gray-500">
+              {gameState.logs.length}
+            </span>
+          </div>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            {gameState.logs.slice(-18).map(log => (
+              <div key={log.id} className="rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-[11px] leading-normal text-gray-300">
                 {log.message}
               </div>
             ))}
-            {chatMessages.map(msg => (
-              <div key={msg.id} className="text-[11px] leading-normal text-gray-300 bg-white/2 p-2 rounded-lg border border-white/5">
-                <span className="font-bold text-red-400 mr-1">{msg.sender}:</span>{msg.message}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Group chat panel overlay */}
+      {showChatPanel && (
+        <motion.div
+          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.98 }}
+          className="absolute left-3 right-3 top-16 z-30 flex h-[48%] flex-col rounded-2xl border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur-xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-[calc(100vw-2rem)]"
+        >
+          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
+            <h3 className="font-extrabold text-xs uppercase tracking-widest text-gray-300">Group Chat</h3>
+            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${connectionStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+              {connectionStatus === 'connected' ? 'Live' : 'Reconnecting'}
+            </span>
+          </div>
+          <div ref={chatListRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            {chatMessages.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 text-center text-xs font-semibold text-gray-500">
+                No messages yet.
               </div>
-            ))}
+            ) : (
+              chatMessages.slice(-80).map(msg => {
+                const isMine = msg.playerId === user?.id;
+                const isSystem = msg.playerId === 'SYSTEM';
+                return (
+                  <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[88%] rounded-2xl border px-3 py-2 text-[11px] leading-normal shadow-lg ${
+                      isSystem
+                        ? 'border-amber-400/20 bg-amber-400/10 text-amber-100'
+                        : isMine
+                          ? 'border-red-500/30 bg-red-600/20 text-white'
+                          : 'border-white/10 bg-white/[0.05] text-gray-200'
+                    }`}>
+                      <div className={`mb-0.5 text-[9px] font-black uppercase tracking-wider ${isMine ? 'text-red-200' : isSystem ? 'text-amber-200' : 'text-red-300'}`}>
+                        {isMine ? 'You' : msg.sender}
+                      </div>
+                      <div className="break-words">{msg.message}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
           <form onSubmit={handleSendChatText} className="flex gap-1.5 mt-2 border-t border-white/5 pt-2">
             <input
@@ -1191,11 +1155,18 @@ export default function GameTable() {
               onChange={e => setChatText(e.target.value)}
               placeholder="Chat message..."
               maxLength={200}
-              className="flex-grow bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
+              className="min-w-0 flex-grow rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:border-red-500 focus:outline-none"
             />
-            <button type="submit" className="px-3 rounded-lg bg-gradient-to-r from-red-600 to-black text-white text-xs font-bold border border-red-500/20">SEND</button>
+            <button
+              type="submit"
+              disabled={!chatText.trim()}
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl border border-red-500/20 bg-red-600 text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-gray-600"
+              title="Send message"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </button>
           </form>
-        </div>
+        </motion.div>
       )}
 
     </main>

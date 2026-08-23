@@ -222,7 +222,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     socket.on('chatMessageRelay', (msg: ChatMessage) => {
-      set((state) => ({ chatMessages: [...state.chatMessages, msg] }));
+      set((state) => ({ chatMessages: [...state.chatMessages.slice(-79), msg] }));
     });
 
     socket.on('queueJoined', () => {
@@ -241,7 +241,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         message: announcement,
         timestamp: Date.now()
       };
-      set((state) => ({ chatMessages: [...state.chatMessages, systemMsg] }));
+      set((state) => ({ chatMessages: [...state.chatMessages.slice(-79), systemMsg] }));
       get().pushToast(announcement, 'info');
     });
 

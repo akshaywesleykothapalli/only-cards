@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '../store/useGameStore';
 import { useAudio } from '../hooks/useAudio';
 import { MatchRules } from 'cards-shared';
-import { Trophy, Shield, Users, Swords, X, Hash, DoorOpen, PlusCircle } from 'lucide-react';
+import { Trophy, Shield, Users, Swords, X, DoorOpen, PlusCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ShinyText from './ShinyText';
 import { SharedNavbar } from './SharedNavbar';
@@ -30,7 +30,9 @@ export default function Lobby() {
   const router = useRouter();
 
   const { playHover, playSelect } = useAudio();
-  const [roomCodeInput, setRoomCodeInput] = useState('');
+  const [roomCodeDigits, setRoomCodeDigits] = useState<string[]>(Array(6).fill(''));
+  const roomCodeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const roomCodeInput = roomCodeDigits.join('');
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [showPracticeModal, setShowPracticeModal] = useState(false);
   const [customMode, setCustomMode] = useState<'choice' | 'create' | 'join'>('choice');
@@ -115,11 +117,47 @@ export default function Lobby() {
 
   const handleJoinByCode = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomCodeInput.trim()) return;
+    if (roomCodeInput.length !== 6) return;
     playSelect();
-    joinRoom(roomCodeInput.toUpperCase());
+    joinRoom(roomCodeInput);
     setShowCustomModal(false);
     setCustomMode('choice');
+    setRoomCodeDigits(Array(6).fill(''));
+  };
+
+  const updateRoomCodeDigit = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, '');
+    const nextDigits = [...roomCodeDigits];
+    if (!digits) {
+      nextDigits[index] = '';
+      setRoomCodeDigits(nextDigits);
+      return;
+    }
+
+    digits.slice(0, 6 - index).split('').forEach((digit, offset) => {
+      nextDigits[index + offset] = digit;
+    });
+    setRoomCodeDigits(nextDigits);
+    roomCodeInputRefs.current[Math.min(5, index + digits.length)]?.focus();
+  };
+
+  const handleRoomCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !roomCodeDigits[index] && index > 0) {
+      roomCodeInputRefs.current[index - 1]?.focus();
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault();
+      roomCodeInputRefs.current[index - 1]?.focus();
+    }
+    if (e.key === 'ArrowRight' && index < 5) {
+      e.preventDefault();
+      roomCodeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleRoomCodePaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    updateRoomCodeDigit(index, e.clipboardData.getData('text'));
   };
 
   return (
@@ -519,16 +557,26 @@ export default function Lobby() {
               <form onSubmit={handleJoinByCode} className="flex flex-col gap-5">
                 <label className="rounded-2xl border border-white/10 bg-white/[0.045] p-5">
                   <span className="font-display text-[13px] font-bold text-white uppercase tracking-[0.12em]">Room code</span>
-                  <div className="relative mt-4">
-                    <Hash className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-red-300" />
-                    <input
-                      type="text"
-                      value={roomCodeInput}
-                      onChange={e => setRoomCodeInput(e.target.value)}
-                      placeholder="ROOM ABC123"
-                      className="w-full rounded-xl border border-white/10 bg-black/35 py-4 pl-12 pr-4 font-mono text-lg font-black uppercase tracking-[0.18em] text-white placeholder-gray-600 transition-colors focus:outline-none focus:border-red-400/60"
-                    />
+                  <div className="mt-4 grid grid-cols-6 gap-2 sm:gap-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <input
+                        key={index}
+                        ref={element => { roomCodeInputRefs.current[index] = element; }}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                        value={roomCodeDigits[index] ?? ''}
+                        onChange={e => updateRoomCodeDigit(index, e.target.value)}
+                        onKeyDown={e => handleRoomCodeKeyDown(index, e)}
+                        onPaste={e => handleRoomCodePaste(index, e)}
+                        maxLength={1}
+                        aria-label={`Room code digit ${index + 1}`}
+                        className="aspect-square w-full rounded-2xl border border-white/10 bg-black/35 text-center font-mono text-2xl font-black text-white shadow-inner shadow-black/20 transition-colors focus:border-red-400/70 focus:bg-red-500/10 focus:outline-none sm:text-3xl"
+                      />
+                    ))}
                   </div>
+                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Enter the 6-digit code</p>
                 </label>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -541,10 +589,11 @@ export default function Lobby() {
                   </button>
                   <motion.button
                     type="submit"
+                    disabled={roomCodeInput.length !== 6}
                     onMouseEnter={playHover}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-1 rounded-2xl btn-arena-primary py-4 font-display text-sm font-bold uppercase tracking-[0.08em] border border-red-400/30 shadow-lg shadow-red-500/20 transition-all"
+                    className="flex-1 rounded-2xl btn-arena-primary py-4 font-display text-sm font-bold uppercase tracking-[0.08em] border border-red-400/30 shadow-lg shadow-red-500/20 transition-all disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
                   >
                     Join Room
                   </motion.button>

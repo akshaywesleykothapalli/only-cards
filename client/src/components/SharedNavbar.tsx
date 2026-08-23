@@ -6,7 +6,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useAudio } from '../hooks/useAudio';
 import { SpotlightNavbar } from './SpotlightNavbar';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gamepad2, User, ArrowLeft, Lock, UserPlus, X, Menu } from 'lucide-react';
+import { Gamepad2, User, ArrowLeft, Lock, UserPlus, X, Menu, Copy, Check } from 'lucide-react';
 
 export interface SharedNavbarProps {
   showBackButton?: boolean;
@@ -45,6 +45,7 @@ export function SharedNavbar({
   const pathname = usePathname();
   const [showGuestFriendsDialog, setShowGuestFriendsDialog] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [copiedRoomCode, setCopiedRoomCode] = React.useState(false);
   const isGuestUser = user?.provider === 'GUEST' || user?.username?.startsWith('Guest_');
 
   const handleBackClick = () => {
@@ -55,6 +56,18 @@ export function SharedNavbar({
   const handleLogout = () => {
     playSelect();
     logout();
+  };
+
+  const handleCopyRoomCode = async () => {
+    if (!roomCode) return;
+    playSelect();
+    try {
+      await navigator.clipboard.writeText(roomCode);
+      setCopiedRoomCode(true);
+      window.setTimeout(() => setCopiedRoomCode(false), 1600);
+    } catch {
+      setCopiedRoomCode(false);
+    }
   };
 
   const handleItemClick = (item: any, index: number) => {
@@ -127,13 +140,23 @@ export function SharedNavbar({
 
         {/* Room code */}
         {showRoomCode && roomCode && (
-          <div className="hidden items-center gap-3 sm:flex">
-            <span className="text-xs text-red-400 font-black uppercase tracking-widest border border-red-500/30 px-3 py-1 rounded-full font-mono">
+          <div className="hidden items-center gap-2 sm:flex">
+            <span className="rounded-full border border-red-500/30 px-3 py-1 font-mono text-xs font-black uppercase tracking-widest text-red-400">
               ROOM CODE
             </span>
             <span className="font-mono text-lg font-black tracking-widest text-white transition-colors hover:text-red-400 lg:text-xl">
               {roomCode}
             </span>
+            <button
+              type="button"
+              onClick={handleCopyRoomCode}
+              onMouseEnter={playHover}
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-gray-300 transition-colors hover:border-red-400/40 hover:bg-red-500/15 hover:text-white"
+              aria-label="Copy room code"
+              title={copiedRoomCode ? 'Copied' : 'Copy room code'}
+            >
+              {copiedRoomCode ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
           </div>
         )}
 
@@ -211,9 +234,19 @@ export function SharedNavbar({
             className="absolute left-3 right-3 top-[calc(100%+0.25rem)] z-[70] rounded-3xl border border-white/10 bg-[#07070b]/95 p-3 shadow-2xl backdrop-blur-xl md:hidden"
           >
             {showRoomCode && roomCode && (
-              <div className="mb-2 flex items-center justify-between rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+              <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <span className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-red-300">Room</span>
-                <span className="truncate pl-3 font-mono text-sm font-black tracking-[0.18em] text-white">{roomCode}</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate pl-3 font-mono text-sm font-black tracking-[0.18em] text-white">{roomCode}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyRoomCode}
+                    className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-gray-200 transition-colors hover:bg-white/10"
+                    aria-label="Copy room code"
+                  >
+                    {copiedRoomCode ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
               </div>
             )}
             <div className="grid gap-2">
