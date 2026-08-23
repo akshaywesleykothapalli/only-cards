@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { SharedNavbar } from '../../components/SharedNavbar';
 import ShinyText from '../../components/ShinyText';
+import { SiteFooter } from '../../components/SiteFooter';
 
 const rules = [
   {
@@ -53,6 +54,7 @@ const cardVariants = {
 
 export default function RulesPage() {
   return (
+    <>
     <div className="min-h-screen bg-arena-gradient bg-grid px-6 pt-28 pb-20 text-gray-100 relative overflow-hidden">
       {/* Background glow effects */}
       <div className="glow-effect w-[500px] h-[500px] bg-red-650 top-20 right-20 animate-pulse-glow" style={{ opacity: 0.08 }} />
@@ -285,5 +287,7 @@ export default function RulesPage() {
         </div>
       </motion.section>
     </div>
+    <SiteFooter />
+    </>
   );
 }

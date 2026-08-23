@@ -135,9 +135,9 @@ export function isValidPlay(
     if (!rules.stacking) return false;
 
     // When stacking is enabled, only matching or stronger draw cards can be played.
-    // Standard: +2 on +2, +4 on +4, +4 on +2. Flip Mode: +5 on +5, +5 on +2/+4.
+    // Standard: +2 on +2, +4 on +4, +4 on +2. Once +4 is on top, +2 cannot answer it.
     if (activeValue === 'DRAW_TWO') {
-      return face.value === 'DRAW_TWO' || face.value === 'WILD_DRAW_FOUR' || face.value === 'DRAW_FIVE' || face.value === 'WILD_DRAW_FIVE';
+      return face.value === 'DRAW_TWO' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE';
     }
     if (activeValue === 'DRAW_FIVE') {
       return face.value === 'DRAW_FIVE' || face.value === 'WILD_DRAW_FIVE';

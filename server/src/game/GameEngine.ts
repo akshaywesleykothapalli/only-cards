@@ -193,17 +193,8 @@ export class GameEngine {
 
     this.addLog('PLAY', `${player.name} played ${face.color === 'WILD' ? `Wild (${chosenColor})` : `${face.color} ${face.value}`}`, player.id);
 
-    // Track LAST CARD rules.
-    // If player has exactly 1 card left and didn't call LAST CARD yet:
     if (player.cards.length === 1 && !this.hasCalledLastCard[player.id]) {
-      // They have a brief moment or we allow other players to challenge.
       this.addLog('SYSTEM', `${player.name} has 1 card remaining!`);
-    }
-
-    // Resolve stacking draw penalty if this player plays a matching draw card
-    if (this.state.drawStackCount > 0 && (face.value === 'DRAW_TWO' || face.value === 'WILD_DRAW_FOUR' || face.value === 'DRAW_FIVE' || face.value === 'WILD_DRAW_FIVE')) {
-      // The new card's penalty will be added in processCardAction - reset old stack first
-      this.state.drawStackCount = 0;
     }
 
     // Process card action
@@ -212,6 +203,8 @@ export class GameEngine {
     // Check Win state
     if (player.cards.length === 0) {
       this.resolveRoundWinner(player.id);
+      this.recordReplayFrame('PLAY_CARD', player.id, card, undefined, chosenColor);
+      this.notifyStateChange();
       return true;
     }
 
@@ -240,8 +233,9 @@ export class GameEngine {
       this.state.direction = this.state.direction === 'CW' ? 'CCW' : 'CW';
       this.addLog('REVERSE', `Play direction reversed.`);
       if (this.state.players.length === 2) {
-        // In 2 player games, Reverse skips the other player, keeping it your turn
+        // In 2 player games, Reverse acts like a skip and the current player stays active.
         this.addLog('SKIP', `${nextPlayer.name} was skipped.`);
+      } else {
         this.advanceTurn();
       }
     } else if (face.value === 'DRAW_TWO') {
@@ -251,7 +245,7 @@ export class GameEngine {
         this.advanceTurn();
         this.advanceTurn();
       } else {
-        if (this.state.drawStackCount === 0) this.state.drawStackCount = 2;
+        this.state.drawStackCount += 2;
         this.addLog('SYSTEM', `Draw stack is now +${this.state.drawStackCount}. Pass to ${nextPlayer.name}`);
         this.advanceTurn();
       }
@@ -373,9 +367,18 @@ export class GameEngine {
   public callLastCard(playerId: string): boolean {
     const player = this.state.players.find(p => p.id === playerId);
     if (!player) return false;
+    if (player.cards.length < 1 || player.cards.length > 2) return false;
+    if (player.cards.length === 2) {
+      const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+      const hasPlayableCard = player.cards.some(card =>
+        isValidPlay(card, this.state.activeColor, this.state.activeValue, this.state.drawStackCount, this.state.rules, this.state.activeSide)
+      );
+      if (playerIndex !== this.state.currentPlayerIndex || !hasPlayableCard) return false;
+    }
+    if (this.hasCalledLastCard[playerId]) return true;
 
     this.hasCalledLastCard[playerId] = true;
-    this.addLog('CARD_CALL', `📣 ${player.name} calls LAST CARD!`, playerId);
+    this.addLog('CARD_CALL', `${player.name} calls LAST CARD.`, playerId);
     this.recordReplayFrame('CARD_CALL', playerId);
     this.notifyStateChange();
     return true;
@@ -389,21 +392,21 @@ export class GameEngine {
 
     // A challenge is valid if the target player has exactly 1 card left, and did NOT call LAST CARD.
     if (target.cards.length === 1 && !this.hasCalledLastCard[target.id]) {
-      this.addLog('CHALLENGE', `💥 ${challenger.name} challenged ${target.name} for forgetting to call LAST CARD! Penalty +2 cards.`);
-      this.drawCardsForPlayer(target.id, 2);
+      this.addLog('CHALLENGE', `${challenger.name} challenged ${target.name} for missing LAST CARD. Penalty +3 cards.`);
+      this.drawCardsForPlayer(target.id, 3);
       this.missedLastCardCalls[target.id] = (this.missedLastCardCalls[target.id] || 0) + 1;
-      this.hasCalledLastCard[target.id] = true; // prevent double penalty
       this.recordReplayFrame('CHALLENGE_SUCCESS', challengerId, undefined, targetPlayerId);
       this.notifyStateChange();
       return true;
     }
 
-    // False challenge penalty
-    this.addLog('CHALLENGE', `❌ False challenge by ${challenger.name}. Penalty +2 cards.`);
-    this.drawCardsForPlayer(challenger.id, 2);
+    // False challenges are ignored. Penalizing the challenger felt like the
+    // game ended out of nowhere when the UI briefly showed an already-called
+    // one-card opponent.
+    this.addLog('CHALLENGE', `${challenger.name} challenged, but LAST CARD was already safe.`);
     this.recordReplayFrame('CHALLENGE_FAIL', challengerId);
     this.notifyStateChange();
-    return true;
+    return false;
   }
 
   // Auto play card/draw on timer runout
@@ -455,6 +458,10 @@ export class GameEngine {
     for (let i = 0; i < count; i++) {
       const card = this.drawSingleCard();
       if (card) player.cards.push(card);
+    }
+
+    if (player.cards.length !== 1) {
+      this.hasCalledLastCard[player.id] = false;
     }
   }
 

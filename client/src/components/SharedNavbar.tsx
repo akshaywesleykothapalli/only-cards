@@ -6,7 +6,8 @@ import { useGameStore } from '../store/useGameStore';
 import { useAudio } from '../hooks/useAudio';
 import { SpotlightNavbar } from './SpotlightNavbar';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gamepad2, User, ArrowLeft, Lock, UserPlus, X, Menu, Copy, Check } from 'lucide-react';
+import { User, ArrowLeft, Lock, UserPlus, X, Menu, Copy, Check } from 'lucide-react';
+import { BrandMark } from './BrandMark';
 
 export interface SharedNavbarProps {
   showBackButton?: boolean;
@@ -131,7 +132,7 @@ export function SharedNavbar({
             </button>
           )}
           <div className="flex min-w-0 items-center gap-2">
-            <Gamepad2 className="h-5 w-5 flex-shrink-0 text-red-500 sm:h-6 sm:w-6" />
+            <BrandMark size="sm" />
             <span className="flex items-center gap-1 truncate text-base font-black tracking-tight text-white sm:text-lg">
               ONLY <span className="text-red-500">CARDS</span>
             </span>

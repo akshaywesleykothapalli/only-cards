@@ -242,7 +242,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
         timestamp: Date.now()
       };
       set((state) => ({ chatMessages: [...state.chatMessages.slice(-79), systemMsg] }));
-      get().pushToast(announcement, 'info');
     });
 
     socket.on('gameOver', (data: { winnerId: string | null; results?: Record<string, MatchResult> }) => {

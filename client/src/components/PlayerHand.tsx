@@ -46,7 +46,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
             : 'border-white/10'
         }`}
       >
-        <div className="absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number">
+        <div className={`absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
@@ -79,7 +79,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
           )}
         </div>
 
-        <div className="absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180">
+        <div className={`absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />

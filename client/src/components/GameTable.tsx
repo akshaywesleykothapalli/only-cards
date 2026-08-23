@@ -10,7 +10,7 @@ import BorderGlow from './BorderGlow';
 import { SharedNavbar } from './SharedNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Volume2, VolumeX, ShieldAlert, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, ClipboardList, Send } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, Send, X, Zap } from 'lucide-react';
 import { getCardSymbol, getCardBgHex, getCardGlowHsl, getCardGradientColors, getCardValueColor } from '../lib/cardColors';
 
 type OpponentSeatPosition = 'top' | 'left' | 'right' | 'bottom';
@@ -106,7 +106,6 @@ export default function GameTable() {
     challengeLastCard,
     sendChat,
     sendReaction,
-    connectionStatus,
     leaveRoom,
     matchResult
   } = useGameStore();
@@ -116,8 +115,8 @@ export default function GameTable() {
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [drawnPlayableCardId, setDrawnPlayableCardId] = useState<string | null>(null);
   const [pendingPlayCardId, setPendingPlayCardId] = useState<string | null>(null);
+  const [lastCardActionCoolingDown, setLastCardActionCoolingDown] = useState(false);
   const [showChatPanel, setShowChatPanel] = useState(false);
-  const [showLogsPanel, setShowLogsPanel] = useState(false);
   const [chatText, setChatText] = useState('');
   const [soundMuted, setSoundMuted] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -328,19 +327,24 @@ export default function GameTable() {
   const isPhonePortrait = viewport.isTouch && viewport.width < 768 && viewport.height > viewport.width;
   const isPhoneTable = isCompactPhoneTable;
 
-  // Mirrors the server's own hasCalledLastCard tracking: the most recent
-  // CARD_CALL / PLAY / DRAW log entry for this player determines whether
-  // their call is still in effect (a play or draw resets it server-side).
-  const hasCalledLastCard = (() => {
-    if (!me) return false;
+  const hasPlayerCalledLastCard = (playerId?: string) => {
+    if (!playerId) return false;
     for (let i = gameState.logs.length - 1; i >= 0; i--) {
       const log = gameState.logs[i];
-      if (log.playerId !== me.id) continue;
+      if (log.playerId !== playerId) continue;
       if (log.type === 'CARD_CALL') return true;
-      if (log.type === 'PLAY' || log.type === 'DRAW') return false;
+      if (log.type === 'DRAW') return false;
     }
     return false;
-  })();
+  };
+
+  const hasCalledLastCard = Boolean(me && me.cards.length <= 2 && hasPlayerCalledLastCard(me.id));
+  const challengeableOpponent = gameState.players.find(
+    p => p.id !== user?.id && p.cards.length === 1 && !hasPlayerCalledLastCard(p.id)
+  );
+  const lastCardThreatOpponent = challengeableOpponent || gameState.players.find(
+    p => p.id !== user?.id && p.cards.length === 2
+  );
 
   const orderedOpponents: Player[] = [];
   if (myIndex !== -1) {
@@ -367,7 +371,7 @@ export default function GameTable() {
           if (gameState.drawStackCount > 0) {
             if (!gameState.rules.stacking) return false;
             if (gameState.activeValue === 'DRAW_TWO') {
-              return face.value === 'DRAW_TWO' || face.value === 'WILD_DRAW_FOUR' || face.value === 'DRAW_FIVE' || face.value === 'WILD_DRAW_FIVE';
+              return face.value === 'DRAW_TWO' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE';
             }
             if (gameState.activeValue === 'DRAW_FIVE') {
               return face.value === 'DRAW_FIVE' || face.value === 'WILD_DRAW_FIVE';
@@ -384,6 +388,11 @@ export default function GameTable() {
         })
         .map(c => c.id)
     : [];
+  const canCallLastCard = Boolean(
+    me &&
+    !hasCalledLastCard &&
+    (me.cards.length === 1 || (isMyTurn && me.cards.length === 2 && playableCardIds.length > 0))
+  );
 
   // Only allow drawing when it's our turn, we have no playable cards, and haven't drawn yet this turn
   const canDraw = isMyTurn && playableCardIds.length === 0 && drawnPlayableCardId === null;
@@ -433,6 +442,24 @@ export default function GameTable() {
     setChatText('');
   };
 
+  const handleSendQuickChat = (message: string) => {
+    sendChat(message);
+  };
+
+  const triggerLastCardActionCooldown = () => {
+    setLastCardActionCoolingDown(true);
+    window.setTimeout(() => setLastCardActionCoolingDown(false), 900);
+  };
+
+  const actionCardClass = (enabled: boolean, active = false) =>
+    `grid h-12 w-9 place-items-center rounded-lg border text-xs font-black shadow-xl transition-all sm:h-14 sm:w-10 ${
+      active
+        ? 'border-emerald-300/70 bg-emerald-500/25 text-emerald-100 ring-2 ring-emerald-300/30'
+        : enabled
+          ? 'border-red-200/70 bg-red-500/30 text-white ring-2 ring-red-300/35 hover:-translate-y-1 hover:bg-red-500 hover:shadow-red-500/30'
+          : 'cursor-not-allowed border-white/10 bg-black/35 text-gray-600 opacity-55'
+    }`;
+
   const toggleMute = () => {
     const nextMute = !soundMuted;
     setSoundMuted(nextMute);
@@ -461,7 +488,7 @@ export default function GameTable() {
           face.color === 'WILD' ? 'border-red-500/40' : 'border-white/30'
         }`}
       >
-        <div className="absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number">
+        <div className={`absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
@@ -492,7 +519,7 @@ export default function GameTable() {
             </span>
           )}
         </div>
-        <div className="absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180">
+        <div className={`absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
@@ -516,20 +543,6 @@ export default function GameTable() {
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          onClick={() => { audio.playSelect(); setShowLogsPanel(!showLogsPanel); }}
-          className={`p-2 rounded-full transition-all border ${showLogsPanel ? 'bg-red-650/20 border-red-500 text-red-400' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
-          title="Toggle game logs"
-        >
-          <ClipboardList className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => { audio.playSelect(); setShowChatPanel(!showChatPanel); }}
-          className={`p-2 rounded-full transition-all border ${showChatPanel ? 'bg-red-650/20 border-red-500 text-red-400' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
-          title="Toggle chat"
-        >
-          <MessagesSquare className="w-4 h-4" />
-        </button>
         <button
           onClick={toggleMute}
           className="p-2 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
@@ -685,7 +698,7 @@ export default function GameTable() {
                     const face = getActiveFace(topDiscard);
                     return (
                       <>
-                        <div className="absolute top-2 left-2 text-xs sm:text-sm card-corner-number">
+                        <div className={`absolute top-2 left-2 text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
                           {face.value === 'WILD' ? (
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
                               <div className="bg-[#ef4444]" />
@@ -699,7 +712,7 @@ export default function GameTable() {
                         </div>
                         
                         <div className="card-oval-insert w-[76%] h-[60%] flex items-center justify-center">
-                          {face.value === 'WILD' || face.value === 'WILD_DRAW_FOUR' ? (
+                          {face.value === 'WILD' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE' ? (
                             <motion.div 
                               className="h-12 w-12 rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45 sm:h-16 sm:w-16"
                               animate={{ rotate: [45, 48, 45] }}
@@ -718,7 +731,7 @@ export default function GameTable() {
                           )}
                         </div>
 
-                        <div className="absolute bottom-2 right-2 text-xs sm:text-sm card-corner-number rotate-180">
+                        <div className={`absolute bottom-2 right-2 text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
                           {face.value === 'WILD' ? (
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
                               <div className="bg-[#ef4444]" />
@@ -745,7 +758,7 @@ export default function GameTable() {
               initial={{ scale: 0.9, y: 5, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="absolute -bottom-10 bg-red-650/30 text-red-400 border border-red-500/40 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 backdrop-blur-sm shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+              className="absolute bottom-full left-1/2 mb-4 -translate-x-1/2 whitespace-nowrap bg-red-950/70 text-red-200 border border-red-500/40 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 backdrop-blur-sm shadow-[0_0_20px_rgba(239,68,68,0.3)]"
             >
               <ShieldAlert className="w-4 h-4" /> STACK ACTIVE: +{gameState.drawStackCount}
             </motion.div>
@@ -809,7 +822,7 @@ export default function GameTable() {
           );
         })}
 
-        {/* BOTTOM CONTROLS - Reactions and Call Last Card (separate from player hand) */}
+        {/* BOTTOM CONTROLS - Pass turn only; LAST CARD controls sit above the player name. */}
         <div
           className={`absolute pointer-events-auto z-30 flex flex-wrap items-center gap-2 sm:gap-3 justify-center ${isPhoneTable ? 'compact-action-row' : ''}`}
           style={{
@@ -830,20 +843,6 @@ export default function GameTable() {
               }`}>
                 <span className="block max-w-[145px] truncate">{me?.name || 'You'}</span>
               </div>
-              <button
-                onClick={() => { if (hasCalledLastCard) return; audio.playLastCardCall(); callLastCard(); }}
-                disabled={hasCalledLastCard}
-                aria-label={hasCalledLastCard ? 'Last card called' : 'Call last card'}
-                aria-pressed={hasCalledLastCard}
-                title={hasCalledLastCard ? 'Last card called' : 'Call last card'}
-                className={`grid h-9 w-9 place-items-center rounded-full border text-sm font-black transition-all ${
-                  hasCalledLastCard
-                    ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40 cursor-default'
-                    : 'bg-red-600/25 text-red-100 border-red-400/50 hover:bg-red-500 hover:text-white'
-                }`}
-              >
-                {hasCalledLastCard ? '✓' : '📣'}
-              </button>
               {isMyTurn && drawnPlayableCardId !== null && (
                 <button
                   onClick={() => { audio.playSelect(); setDrawnPlayableCardId(null); passTurn(); }}
@@ -857,46 +856,6 @@ export default function GameTable() {
             </>
           ) : (
             <>
-              {/* Reaction trigger deck */}
-              <div className="flex gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-                {['🔥', '💩', '😂', '😭', '😮', '👑'].map(emoji => (
-                  <button
-                    key={emoji}
-                    onClick={() => sendReaction(emoji)}
-                    className="hover:scale-125 hover:rotate-12 transition-all text-sm filter drop-shadow"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-
-              {/* LAST CARD Call overlay buttons */}
-              <button
-                onClick={() => { if (hasCalledLastCard) return; audio.playLastCardCall(); callLastCard(); }}
-                disabled={hasCalledLastCard}
-                aria-pressed={hasCalledLastCard}
-                className={`px-4 py-1.5 rounded-full font-bold border text-xs tracking-wider uppercase transition-all ${
-                  hasCalledLastCard
-                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/40 cursor-default'
-                    : 'bg-red-600/20 text-red-500 border-red-500/40 hover:bg-red-600 hover:text-white'
-                }`}
-              >
-                {hasCalledLastCard ? '✅ LAST CARD CALLED' : '📢 CALL LAST CARD'}
-              </button>
-
-              {/* Challenge deck */}
-              {gameState.players.some(p => p.id !== user?.id && p.cards.length === 1) && (
-                <button
-                  onClick={() => {
-                    const target = gameState.players.find(p => p.id !== user?.id && p.cards.length === 1);
-                    if (target) challengeLastCard(target.id);
-                  }}
-                  className="px-4 py-1.5 rounded-full font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 hover:bg-yellow-500 hover:text-black text-xs tracking-wider uppercase transition-all"
-                >
-                  ⚡ CHALLENGE LAST CARD
-                </button>
-              )}
-
               {/* Pass turn - only shown after player draws a matching card */}
               {isMyTurn && drawnPlayableCardId !== null && (
                 <button
@@ -925,29 +884,66 @@ export default function GameTable() {
           }}
         >
           {me && !isPhoneTable && (
-            <motion.div
-              initial={{ opacity: 0, y: 8, x: '-50%' }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                x: '-50%',
-                scale: isMyTurn ? 1.08 : 1,
-                boxShadow: isMyTurn
-                  ? '0 0 28px rgba(239,68,68,0.42)'
-                  : '0 0 0 rgba(0,0,0,0)',
-              }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className={`absolute ${isPhoneTable ? '-top-9' : '-top-16 sm:-top-20'} left-1/2 z-30 max-w-[220px] rounded-full border px-3 py-1.5 text-center font-display text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-xl sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.16em] ${
-                isMyTurn
-                  ? 'border-red-300/60 bg-red-500/25 text-red-50 ring-2 ring-red-400/35'
-                  : 'border-white/10 bg-black/35 text-gray-300'
-              }`}
-            >
-              <span className="block truncate">{me.name || 'You'}</span>
-              {isMyTurn && (
-                <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-red-100/80">YOUR TURN</span>
-              )}
-            </motion.div>
+            <div className="absolute -top-32 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2 sm:-top-36">
+              <div className="flex items-end justify-center gap-2">
+                <button
+                  onClick={() => {
+                    if (!canCallLastCard || lastCardActionCoolingDown) return;
+                    triggerLastCardActionCooldown();
+                    audio.playLastCardCall();
+                    callLastCard();
+                  }}
+                  disabled={!canCallLastCard || lastCardActionCoolingDown}
+                  aria-label={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
+                  aria-pressed={hasCalledLastCard}
+                  title={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
+                  className={actionCardClass(canCallLastCard && !lastCardActionCoolingDown, hasCalledLastCard)}
+                >
+                  <span className="text-lg leading-none">{hasCalledLastCard ? '✓' : '1'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (!challengeableOpponent || lastCardActionCoolingDown) return;
+                    triggerLastCardActionCooldown();
+                    challengeLastCard(challengeableOpponent.id);
+                  }}
+                  disabled={!challengeableOpponent || lastCardActionCoolingDown}
+                  aria-label="Challenge last card"
+                  title={
+                    challengeableOpponent
+                      ? `Challenge ${challengeableOpponent.name}`
+                      : lastCardThreatOpponent
+                        ? `${lastCardThreatOpponent.name} is close to LAST CARD`
+                        : 'No LAST CARD threat'
+                  }
+                  className={actionCardClass(Boolean(challengeableOpponent) && !lastCardActionCoolingDown, Boolean(challengeableOpponent))}
+                >
+                  <Zap className="h-5 w-5" />
+                </button>
+              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  scale: isMyTurn ? 1.08 : 1,
+                  boxShadow: isMyTurn
+                    ? '0 0 28px rgba(239,68,68,0.42)'
+                    : '0 0 0 rgba(0,0,0,0)',
+                }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className={`max-w-[220px] rounded-full border px-3 py-1.5 text-center font-display text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-xl sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.16em] ${
+                  isMyTurn
+                    ? 'border-red-300/60 bg-red-500/25 text-red-50 ring-2 ring-red-400/35'
+                    : 'border-white/10 bg-black/35 text-gray-300'
+                }`}
+              >
+                <span className="block truncate">{me.name || 'You'}</span>
+                {isMyTurn && (
+                  <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-red-100/80">YOUR TURN</span>
+                )}
+              </motion.div>
+            </div>
           )}
           <motion.div
             initial={{ opacity: 0, y: 34 }}
@@ -1092,46 +1088,40 @@ export default function GameTable() {
 
       </AnimatePresence>
 
-      {/* Game logs panel overlay */}
-      {showLogsPanel && (
-        <motion.div
-          initial={{ opacity: 0, y: -8, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.98 }}
-          className="absolute left-3 right-3 top-16 z-30 flex max-h-[44%] flex-col rounded-2xl border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur-xl sm:left-6 sm:right-auto sm:w-80 sm:max-w-[calc(100vw-2rem)]"
+      {!showChatPanel && (
+        <button
+          onClick={() => { audio.playSelect(); setShowChatPanel(true); }}
+          className="absolute bottom-5 right-5 z-40 grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/65 text-red-100 shadow-2xl backdrop-blur-xl transition-all hover:border-red-400/60 hover:bg-red-600 sm:bottom-7 sm:right-7"
+          title="Chat"
+          aria-label="Open chat"
         >
-          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
-            <h3 className="font-extrabold text-xs uppercase tracking-widest text-gray-300">Game Logs</h3>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-black text-gray-500">
-              {gameState.logs.length}
-            </span>
-          </div>
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {gameState.logs.slice(-18).map(log => (
-              <div key={log.id} className="rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-[11px] leading-normal text-gray-300">
-                {log.message}
-              </div>
-            ))}
-          </div>
-        </motion.div>
+          <MessagesSquare className="h-5 w-5" />
+        </button>
       )}
 
-      {/* Group chat panel overlay */}
+      {/* Chat popover */}
       {showChatPanel && (
         <motion.div
-          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          initial={{ opacity: 0, y: 18, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.98 }}
-          className="absolute left-3 right-3 top-16 z-30 flex h-[48%] flex-col rounded-2xl border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur-xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-[calc(100vw-2rem)]"
+          exit={{ opacity: 0, y: 18, scale: 0.96 }}
+          className="absolute bottom-5 right-3 z-40 flex h-[min(58vh,460px)] w-[calc(100vw-1.5rem)] max-w-sm flex-col rounded-2xl border border-red-400/20 bg-[#090607]/90 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.65)] backdrop-blur-2xl sm:bottom-7 sm:right-7 sm:w-96"
         >
-          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
-            <h3 className="font-extrabold text-xs uppercase tracking-widest text-gray-300">Group Chat</h3>
-            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${connectionStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
-              {connectionStatus === 'connected' ? 'Live' : 'Reconnecting'}
-            </span>
+          <div className="mb-2 flex items-center justify-between border-b border-white/5 pb-2">
+            <div>
+              <h3 className="font-display text-sm font-black uppercase tracking-[0.14em] text-white">Chat</h3>
+              <p className="mt-0.5 text-[10px] font-semibold text-gray-500">Table messages and quick reactions</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { audio.playSelect(); setShowChatPanel(false); }}
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:bg-white hover:text-black"
+              aria-label="Close chat"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <div ref={chatListRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+          <div ref={chatListRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-white/5 bg-black/25 p-2">
             {chatMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 text-center text-xs font-semibold text-gray-500">
                 No messages yet.
@@ -1144,12 +1134,12 @@ export default function GameTable() {
                   <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[88%] rounded-2xl border px-3 py-2 text-[11px] leading-normal shadow-lg ${
                       isSystem
-                        ? 'border-amber-400/20 bg-amber-400/10 text-amber-100'
+                        ? 'border-white/10 bg-white/[0.04] text-gray-300'
                         : isMine
-                          ? 'border-red-500/30 bg-red-600/20 text-white'
-                          : 'border-white/10 bg-white/[0.05] text-gray-200'
+                          ? 'border-red-400/40 bg-red-600 text-white'
+                          : 'border-white/10 bg-white/[0.06] text-gray-200'
                     }`}>
-                      <div className={`mb-0.5 text-[9px] font-black uppercase tracking-wider ${isMine ? 'text-red-200' : isSystem ? 'text-amber-200' : 'text-red-300'}`}>
+                      <div className={`mb-0.5 text-[9px] font-black uppercase tracking-wider ${isMine ? 'text-red-100' : isSystem ? 'text-gray-500' : 'text-red-300'}`}>
                         {isMine ? 'You' : msg.sender}
                       </div>
                       <div className="break-words">{msg.message}</div>
@@ -1158,6 +1148,19 @@ export default function GameTable() {
                 );
               })
             )}
+          </div>
+          <div className="mt-2 flex gap-1.5 border-t border-white/5 pt-2">
+            {['🔥', '😂', '😭', '😮', '👑'].map(emoji => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => { handleSendQuickChat(emoji); sendReaction(emoji); }}
+                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-sm transition-transform hover:scale-110 hover:bg-white/10"
+                aria-label={`Send ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
           <form onSubmit={handleSendChatText} className="flex gap-1.5 mt-2 border-t border-white/5 pt-2">
             <input

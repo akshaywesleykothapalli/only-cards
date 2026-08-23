@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BarChart3, LogOut, Shield, Trophy, UserRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SharedNavbar } from '../../components/SharedNavbar';
+import { SiteFooter } from '../../components/SiteFooter';
 import { useGameStore } from '../../store/useGameStore';
 
 export default function ProfilePage() {
@@ -12,6 +13,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
+      <>
       <main className="min-h-screen bg-arena-gradient bg-grid px-6 pt-28 text-center text-white">
         <SharedNavbar showUserInfo={false} />
         <h1 className="text-4xl font-black uppercase">Profile settings</h1>
@@ -20,6 +22,8 @@ export default function ProfilePage() {
           Go home
         </button>
       </main>
+      <SiteFooter />
+      </>
     );
   }
 
@@ -36,6 +40,7 @@ export default function ProfilePage() {
 
 
   return (
+    <>
     <main className="min-h-screen bg-arena-gradient bg-grid px-6 pb-10 pt-28 text-gray-100">
       <SharedNavbar />
       <motion.section
@@ -90,5 +95,7 @@ export default function ProfilePage() {
         </button>
       </motion.section>
     </main>
+    <SiteFooter />
+    </>
   );
 }

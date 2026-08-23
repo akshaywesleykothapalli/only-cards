@@ -229,13 +229,13 @@ export default function Lobby() {
               </motion.span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-red-300 transition-colors">RANKED MATCH</h3>
+              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-green-300 transition-colors">RANKED MATCH</h3>
               <p className="text-sm text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">Compete globally and climb the score ladder</p>
             </div>
             {isQueued && (
-              <motion.div className="relative z-10 flex items-center gap-2 text-red-400 text-xs font-black uppercase tracking-wider">
+              <motion.div className="relative z-10 flex items-center gap-2 text-green-400 text-xs font-black uppercase tracking-wider">
                 <motion.div
-                  className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full"
+                  className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 />
@@ -243,7 +243,7 @@ export default function Lobby() {
               </motion.div>
             )}
             <motion.div
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-400 to-transparent"
+              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-green-400 to-transparent"
               initial={{ scaleX: 0 }}
               whileHover={{ scaleX: 1 }}
               transition={{ duration: 0.3 }}
@@ -280,11 +280,11 @@ export default function Lobby() {
               </motion.span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-green-300 transition-colors">PRACTICE AI</h3>
+              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-red-300 transition-colors">PRACTICE AI</h3>
               <p className="text-sm text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">Train against tactical AI opponents</p>
             </div>
             <motion.div
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-green-400 to-transparent"
+              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-400 to-transparent"
               initial={{ scaleX: 0 }}
               whileHover={{ scaleX: 1 }}
               transition={{ duration: 0.3 }}

@@ -411,8 +411,13 @@ export class SocketManager {
       const room = this.roomManager.getRoom(roomId);
       if (!room || !room.engine) return;
 
-      room.engine.challengeLastCard(userId, data.targetPlayerId);
-      this.logAuditEvent('CHALLENGE_LAST_CARD', { userId, roomId, targetPlayerId: data.targetPlayerId });
+      const success = room.engine.challengeLastCard(userId, data.targetPlayerId);
+      if (success) {
+        this.logAuditEvent('CHALLENGE_LAST_CARD', { userId, roomId, targetPlayerId: data.targetPlayerId });
+      } else {
+        this.emitGameStateToSocket(socket, userId, room.engine.getState());
+        this.logAuditEvent('CHALLENGE_LAST_CARD_FAILED', { userId, roomId, targetPlayerId: data.targetPlayerId });
+      }
     });
 
     // Emoji/Reaction Relays

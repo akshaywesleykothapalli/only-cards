@@ -75,6 +75,11 @@ export class AiTurnController {
         }
       } else if (decision.action === 'DRAW') {
         room.engine.drawCard(freshCurrentPlayer.id);
+        const afterDrawState = room.engine.getState();
+        const afterDrawCurrentPlayer = afterDrawState.players[afterDrawState.currentPlayerIndex];
+        if (afterDrawState.status === 'PLAYING' && afterDrawCurrentPlayer?.id === freshCurrentPlayer.id) {
+          room.engine.passTurn(freshCurrentPlayer.id);
+        }
         this.resetTurnTimer(roomId);
       } else if (decision.action === 'PASS') {
         room.engine.passTurn(freshCurrentPlayer.id);
@@ -85,7 +90,16 @@ export class AiTurnController {
       const afterState = room.engine.getState();
       const aiPlayerAfter = afterState.players.find(p => p.id === freshCurrentPlayer.id);
       if (aiPlayerAfter && aiPlayerAfter.cards.length === 1) {
-        room.engine.callLastCard(freshCurrentPlayer.id);
+        const lastCardTimerKey = `${freshCurrentPlayer.id}:last-card`;
+        if (room.aiIntervals[lastCardTimerKey]) clearTimeout(room.aiIntervals[lastCardTimerKey]);
+        room.aiIntervals[lastCardTimerKey] = setTimeout(() => {
+          if (!room.engine) return;
+          const latest = room.engine.getState();
+          const latestAi = latest.players.find(p => p.id === freshCurrentPlayer.id);
+          if (latest.status === 'PLAYING' && latestAi?.cards.length === 1) {
+            room.engine.callLastCard(freshCurrentPlayer.id);
+          }
+        }, 1800);
       }
     }, thinkTime);
   }
