@@ -231,6 +231,7 @@ describe('GameEngine State Machine tests', () => {
     state.activeValue = 'DRAW_TWO';
     state.drawStackCount = 2;
     state.currentPlayerIndex = 1;
+    state.direction = 'CW';
 
     state.players[1].cards = [makeCard('p2_plus2', 'GREEN', 'DRAW_TWO')];
     expect(engine.playCard('p2', 'p2_plus2')).toBe(true);
