@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CalendarDays, Eye, Filter, Inbox, Lock, Search, ShieldCheck, Star } from 'lucide-react';
+import AuthModal from '../../../components/AuthModal';
 import { SharedNavbar } from '../../../components/SharedNavbar';
 import ToastContainer from '../../../components/ToastContainer';
 import { useGameStore } from '../../../store/useGameStore';
@@ -60,6 +61,7 @@ export default function AdminFeedbackPage() {
   const [to, setTo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [accessMessage, setAccessMessage] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -153,7 +155,11 @@ export default function AdminFeedbackPage() {
   return (
     <>
       <main className="font-body min-h-screen bg-arena-gradient bg-grid px-4 pb-10 pt-28 text-gray-100 sm:px-6">
-        <SharedNavbar showBackButton onBackClick={() => router.push('/ready-to-play')} />
+        <SharedNavbar
+          showBackButton
+          onBackClick={() => router.push('/ready-to-play')}
+          onSignInClick={() => setShowAuthModal(true)}
+        />
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -212,6 +218,15 @@ export default function AdminFeedbackPage() {
               <Lock className="mx-auto h-10 w-10 text-red-400" />
               <h2 className="font-display mt-4 text-xl font-black uppercase text-white">Private area</h2>
               <p className="font-body mt-2 text-sm font-medium text-gray-400">{accessMessage}</p>
+              {!user && (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="font-display mt-6 rounded-2xl bg-red-500 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-400"
+                >
+                  Sign in
+                </button>
+              )}
             </section>
           ) : (
             <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.92fr]">
@@ -294,6 +309,10 @@ export default function AdminFeedbackPage() {
         </motion.section>
       </main>
       <ToastContainer />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </>
   );
 }
