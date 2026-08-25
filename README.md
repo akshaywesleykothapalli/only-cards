@@ -114,12 +114,6 @@ Only Cards includes a local feedback/reporting product for beta testing:
 - Admins can review, filter, inspect, and update report statuses at `/admin/feedback`.
 - Admin access is enforced by the server. Set `ADMIN_USERNAMES` or `ADMIN_USER_IDS` in `.env` to allow specific owners. In local non-production runs, the built-in `admin` account is allowed automatically.
 
-Local admin default:
-
-```text
-username: admin
-password: admin@admin
-```
 
 ---
 
