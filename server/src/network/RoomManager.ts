@@ -118,8 +118,8 @@ export class RoomManager {
       return;
     }
 
-    if (data.rules.maxPlayers && data.rules.maxPlayers > 4) {
-      socket.emit('action_error', 'Rooms can have a maximum of 4 players');
+    if (data.rules.maxPlayers && data.rules.maxPlayers > 8) {
+      socket.emit('action_error', 'Rooms can have a maximum of 8 players');
       return;
     }
 
@@ -165,8 +165,8 @@ export class RoomManager {
       const defaultDifficulties: AiDifficulty[] = data.aiDifficulty && validAiDifficulties.has(data.aiDifficulty)
         ? Array(7).fill(data.aiDifficulty)
         : ['Easy', 'Medium', 'Hard', 'Medium', 'Hard', 'Easy', 'Expert'];
-      const requestedSeats = Math.min(4, data.rules.maxPlayers ?? 4);
-      const botCount = Math.max(1, Math.min(3, requestedSeats - 1));
+      const requestedSeats = Math.min(8, data.rules.maxPlayers ?? 4);
+      const botCount = Math.max(1, Math.min(7, requestedSeats - 1));
       for (let i = 0; i < botCount; i++) {
         players.push({
           id: `ai_${i}_${secureCode(6)}`,

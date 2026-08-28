@@ -26,6 +26,8 @@ services:
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your environment or .env file}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      CLIENT_APP_URL: ${CLIENT_APP_URL:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       # In-network hostname, distinct from the host-side DATABASE_URL in .env
       DATABASE_URL: postgresql://uno:uno@postgres:5432/uno?schema=public
     depends_on:

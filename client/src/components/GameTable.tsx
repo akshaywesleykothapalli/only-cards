@@ -10,7 +10,7 @@ import BorderGlow from './BorderGlow';
 import { SharedNavbar } from './SharedNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Volume2, VolumeX, ShieldAlert, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, Send, X, Zap } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, MessagesSquare, RotateCw, RotateCcw, AlertTriangle, Gamepad2, Send, X, Zap, ArrowLeft } from 'lucide-react';
 import { getCardSymbol, getCardBgHex, getCardGlowHsl, getCardGradientColors, getCardValueColor } from '../lib/cardColors';
 
 type OpponentSeatPosition = 'top' | 'left' | 'right' | 'bottom';
@@ -42,7 +42,7 @@ const seatStyle = (
   },
 });
 
-const getOpponentSeatLayout = (count: number, compact = false): OpponentSeatTemplate[] => {
+const getOpponentSeatLayout = (count: number, compact = false, largeTable = false): OpponentSeatTemplate[] => {
   const topCenter = seatStyle({ left: '50%', top: compact ? '6%' : '7%', transform: 'translateX(-50%)' }, 'top', compact);
   const topLeft = seatStyle({ left: compact ? '34%' : '25%', top: compact ? '6%' : '8%', transform: 'translateX(-50%)' }, 'top', compact);
   const topRight = seatStyle({ right: compact ? '34%' : '25%', top: compact ? '6%' : '8%', transform: 'translateX(50%)' }, 'top', compact);
@@ -52,6 +52,52 @@ const getOpponentSeatLayout = (count: number, compact = false): OpponentSeatTemp
   const rightUpper = seatStyle({ right: compact ? '1.1rem' : '6%', top: compact ? '26%' : '24%' }, 'right', compact);
   const leftLower = seatStyle({ left: compact ? '10%' : '8%', bottom: compact ? '19%' : '16%' }, 'bottom', compact);
   const rightLower = seatStyle({ right: compact ? '10%' : '8%', bottom: compact ? '19%' : '16%' }, 'bottom', compact);
+
+  if (largeTable) {
+    const largeSeat = (
+      style: React.CSSProperties,
+      handPosition: OpponentSeatPosition,
+    ): OpponentSeatBase => ({
+      handPosition,
+      style: {
+        width: compact ? 'clamp(76px, 11vw, 94px)' : 'clamp(110px, 9vw, 138px)',
+        height: compact ? 'clamp(106px, 30vh, 128px)' : 'clamp(156px, 22vh, 184px)',
+        ...style,
+      },
+    });
+    const largeTopCenter = largeSeat({ left: '50%', top: compact ? '4.5%' : '14%', transform: 'translateX(-50%)' }, 'top');
+    const largeTopLeft = largeSeat({ left: compact ? '22%' : '24%' }, 'top');
+    largeTopLeft.style.top = compact ? '5%' : '15%';
+    largeTopLeft.style.transform = 'translateX(-50%)';
+    const largeTopRight = largeSeat({ right: compact ? '22%' : '24%' }, 'top');
+    largeTopRight.style.top = compact ? '5%' : '15%';
+    largeTopRight.style.transform = 'translateX(50%)';
+    const largeLeftMiddle = largeSeat({ left: compact ? '0.55rem' : '4%', top: compact ? '31%' : '38%' }, 'left');
+    const largeRightMiddle = largeSeat({ right: compact ? '0.55rem' : '4%', top: compact ? '31%' : '38%' }, 'right');
+    const largeLeftUpper = largeSeat({ left: compact ? '0.55rem' : '5%', top: compact ? '18%' : '27%' }, 'left');
+    const largeRightUpper = largeSeat({ right: compact ? '0.55rem' : '5%', top: compact ? '18%' : '27%' }, 'right');
+    const largeLeftLowerSide = largeSeat({ left: compact ? '0.55rem' : '5%', top: compact ? '46%' : '50%' }, 'left');
+    const largeRightLowerSide = largeSeat({ right: compact ? '0.55rem' : '5%', top: compact ? '46%' : '50%' }, 'right');
+
+    const largeLayouts: OpponentSeatBase[][] = [
+      [],
+      [largeTopCenter],
+      [largeLeftMiddle, largeRightMiddle],
+      [largeTopCenter, largeLeftMiddle, largeRightMiddle],
+      [largeTopLeft, largeTopRight, largeLeftMiddle, largeRightMiddle],
+      [largeTopCenter, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
+      [largeTopLeft, largeTopRight, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
+      [largeTopLeft, largeTopCenter, largeTopRight, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
+    ];
+
+    return largeLayouts[Math.min(count, largeLayouts.length - 1)].map(seat => ({
+      ...seat,
+      enterFrom:
+        seat.handPosition === 'left' ? { x: -40 } :
+        seat.handPosition === 'right' ? { x: 40 } :
+        { y: -40 },
+    }));
+  }
 
   const layouts: OpponentSeatBase[][] = [
     [],
@@ -326,6 +372,8 @@ export default function GameTable() {
   const isMyTurn = gameState.currentPlayerIndex === myIndex;
   const isPhonePortrait = viewport.isTouch && viewport.width < 768 && viewport.height > viewport.width;
   const isPhoneTable = isCompactPhoneTable;
+  const isLargeTable = gameState.players.length >= 5;
+  const compactCenterTop = isLargeTable ? '51.5%' : '44%';
 
   const hasPlayerCalledLastCard = (playerId?: string) => {
     if (!playerId) return false;
@@ -354,7 +402,7 @@ export default function GameTable() {
       orderedOpponents.push(gameState.players[idx]);
     }
   }
-  const opponentSeats: OpponentSeat[] = getOpponentSeatLayout(orderedOpponents.length, isPhoneTable).map((seat, index) => ({
+  const opponentSeats: OpponentSeat[] = getOpponentSeatLayout(orderedOpponents.length, isPhoneTable, isLargeTable).map((seat, index) => ({
     ...seat,
     player: orderedOpponents[index],
   }));
@@ -467,6 +515,7 @@ export default function GameTable() {
   };
 
   const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
+  const tableCardRadius = isPhoneTable ? 10 : 16;
 
   const getActiveFace = (card: Card) => {
     return gameState.activeSide === 'LIGHT' ? card.lightFace : card.darkFace;
@@ -482,7 +531,7 @@ export default function GameTable() {
         glowColor={getCardGlowHsl(face.color)}
         backgroundColor={getCardBgHex(face.color)}
         colors={getCardGradientColors(face.color)}
-        borderRadius={18}
+        borderRadius={isPhoneTable ? 10 : 18}
         glowRadius={18}
         className={`relative h-full w-full rounded-2xl border-2 select-none ${
           face.color === 'WILD' ? 'border-red-500/40' : 'border-white/30'
@@ -490,7 +539,7 @@ export default function GameTable() {
       >
         <div className={`absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
               <div className="bg-[#3b82f6]" />
               <div className="bg-[#10b981]" />
@@ -503,7 +552,7 @@ export default function GameTable() {
         <div className="card-oval-insert flex items-center justify-center">
           {face.value === 'WILD' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE' ? (
             <motion.div
-              className="h-10 w-10 rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45 sm:h-14 sm:w-14"
+              className="card-wild-symbol rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45"
               animate={{ rotate: [45, 48, 45] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               style={{ willChange: 'transform' }}
@@ -514,14 +563,14 @@ export default function GameTable() {
               <div className="bg-[#f59e0b]" />
             </motion.div>
           ) : (
-            <span className={`card-oval-value text-2xl sm:text-3xl md:text-5xl font-extrabold ${getCardValueColor(face.color)}`}>
+            <span className={`card-oval-value font-extrabold ${getCardValueColor(face.color)}`}>
               {getCardSymbol(face.value)}
             </span>
           )}
         </div>
         <div className={`absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
               <div className="bg-[#3b82f6]" />
               <div className="bg-[#10b981]" />
@@ -589,12 +638,33 @@ export default function GameTable() {
       <div className={`glow-effect w-[550px] h-[550px] ${gameState.activeSide === 'LIGHT' ? 'bg-red-500' : 'bg-red-650'} -top-40 -left-40`} style={{ opacity: gameState.activeSide === 'LIGHT' ? 0.15 : 0.12 }} />
       <div className={`glow-effect w-[550px] h-[550px] ${gameState.activeSide === 'LIGHT' ? 'bg-blue-400' : 'bg-white'} -bottom-40 -right-40`} style={{ opacity: gameState.activeSide === 'LIGHT' ? 0.08 : 0.04 }} />
 
-      <SharedNavbar
-        showBackButton
-        onBackClick={() => setShowExitDialog(true)}
-        customItems={[]}
-        rightActions={gameNavActions}
-      />
+      {isPhoneTable ? (
+        <div className="fixed left-0 right-0 top-0 z-50 flex items-start justify-between px-3 py-3">
+          <button
+            onClick={() => setShowExitDialog(true)}
+            aria-label="Back"
+            title="Back"
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/55 text-white shadow-xl backdrop-blur-xl transition-all hover:border-red-300/60 hover:bg-red-500/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={toggleMute}
+            aria-label={soundMuted ? 'Unmute sound' : 'Mute sound'}
+            title={soundMuted ? 'Unmute sound' : 'Mute sound'}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/55 text-gray-100 shadow-xl backdrop-blur-xl transition-all hover:border-red-300/60 hover:bg-red-500/20"
+          >
+            {soundMuted ? <VolumeX className="h-5 w-5 text-red-300" /> : <Volume2 className="h-5 w-5" />}
+          </button>
+        </div>
+      ) : (
+        <SharedNavbar
+          showBackButton
+          onBackClick={() => setShowExitDialog(true)}
+          customItems={[]}
+          rightActions={gameNavActions}
+        />
+      )}
 
       {/* Game Table - Single Center Point Coordinate System */}
       <div className="absolute inset-0 px-2 py-6 sm:px-6 sm:py-8" style={{ perspective: '1000px' }}>
@@ -613,7 +683,7 @@ export default function GameTable() {
           className="absolute z-20 flex gap-3 sm:gap-4 items-center justify-center"
           style={{
             left: '50%',
-            top: isPhoneTable ? '39%' : '46%',
+            top: isPhoneTable ? compactCenterTop : '46%',
             width: isPhoneTable ? 'min(42vw, 156px)' : 'clamp(220px, 24vw, 300px)',
             height: isPhoneTable ? 'clamp(84px, 19vh, 108px)' : 'clamp(150px, 22vh, 190px)',
             willChange: 'transform'
@@ -687,7 +757,7 @@ export default function GameTable() {
                 glowColor={getCardGlowHsl(gameState.activeColor)}
                 backgroundColor={getCardBgHex(gameState.activeColor)}
                 colors={getCardGradientColors(gameState.activeColor)}
-                borderRadius={16}
+                borderRadius={tableCardRadius}
                 glowRadius={28}
                 className={`relative table-card-size rounded-2xl border-2 select-none cursor-default ${
                   gameState.activeColor === 'WILD' ? 'border-red-500/40' : 'border-white/20'
@@ -700,7 +770,7 @@ export default function GameTable() {
                       <>
                         <div className={`absolute top-2 left-2 text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
                           {face.value === 'WILD' ? (
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+                            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
                               <div className="bg-[#ef4444]" />
                               <div className="bg-[#3b82f6]" />
                               <div className="bg-[#10b981]" />
@@ -714,7 +784,7 @@ export default function GameTable() {
                         <div className="card-oval-insert w-[76%] h-[60%] flex items-center justify-center">
                           {face.value === 'WILD' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE' ? (
                             <motion.div 
-                              className="h-12 w-12 rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45 sm:h-16 sm:w-16"
+                              className="card-wild-symbol rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45"
                               animate={{ rotate: [45, 48, 45] }}
                               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                               style={{ willChange: 'transform' }}
@@ -725,7 +795,7 @@ export default function GameTable() {
                               <div className="bg-[#f59e0b]" />
                             </motion.div>
                           ) : (
-                            <span className={`card-oval-value text-3xl md:text-5xl font-extrabold ${getCardValueColor(gameState.activeColor)}`}>
+                            <span className={`card-oval-value font-extrabold ${getCardValueColor(gameState.activeColor)}`}>
                               {getCardSymbol(face.value)}
                             </span>
                           )}
@@ -733,7 +803,7 @@ export default function GameTable() {
 
                         <div className={`absolute bottom-2 right-2 text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
                           {face.value === 'WILD' ? (
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+                            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
                               <div className="bg-[#ef4444]" />
                               <div className="bg-[#3b82f6]" />
                               <div className="bg-[#10b981]" />
@@ -776,28 +846,30 @@ export default function GameTable() {
             className="absolute pointer-events-auto z-20"
             style={seat.style}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{
-                opacity: 1,
-                scale: isSeatTurn ? 1.08 : 1,
-                boxShadow: isSeatTurn
-                  ? '0 0 28px rgba(239,68,68,0.42)'
-                  : '0 0 0 rgba(0,0,0,0)',
-              }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className={`absolute z-30 max-w-[190px] rounded-full border px-3 py-1.5 text-center font-display text-[9px] font-bold uppercase tracking-[0.14em] backdrop-blur-xl sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.16em] ${
-                isSeatTurn
-                  ? 'border-red-300/60 bg-red-500/25 text-red-50 ring-2 ring-red-400/35'
-                  : 'border-white/10 bg-black/35 text-gray-300'
-              }`}
-              style={getSeatNamePosition(seat.handPosition, isPhoneTable)}
-            >
-              <span className="block truncate">{seat.player.name}</span>
-              {isSeatTurn && (
-                <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-red-100/80">TURN</span>
-              )}
-            </motion.div>
+            {!isLargeTable && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{
+                  opacity: 1,
+                  scale: isSeatTurn ? 1.08 : 1,
+                  boxShadow: isSeatTurn
+                    ? '0 0 28px rgba(239,68,68,0.42)'
+                    : '0 0 0 rgba(0,0,0,0)',
+                }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className={`absolute z-30 max-w-[190px] rounded-full border px-3 py-1.5 text-center font-display text-[9px] font-bold uppercase tracking-[0.14em] backdrop-blur-xl sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.16em] ${
+                  isSeatTurn
+                    ? 'border-red-300/60 bg-red-500/25 text-red-50 ring-2 ring-red-400/35'
+                    : 'border-white/10 bg-black/35 text-gray-300'
+                }`}
+                style={getSeatNamePosition(seat.handPosition, isPhoneTable)}
+              >
+                <span className="block truncate">{seat.player.name}</span>
+                {isSeatTurn && (
+                  <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-red-100/80">TURN</span>
+                )}
+              </motion.div>
+            )}
             <motion.div
               initial={{ opacity: 0, ...seat.enterFrom }}
               animate={{ opacity: 1, x: 0, y: 0 }}
@@ -811,6 +883,8 @@ export default function GameTable() {
                 position={seat.handPosition}
                 isCurrentTurn={isSeatTurn}
                 compact={isPhoneTable}
+                largeTable={isLargeTable}
+                isAi={seat.player.isAi}
               />
               {aiThinkingPlayerId === seat.player.id && !isPhoneTable && (
                 <div className="rounded border border-red-500/20 bg-red-650/20 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-red-400 animate-pulse">
@@ -827,7 +901,7 @@ export default function GameTable() {
           className={`absolute pointer-events-auto z-30 flex flex-wrap items-center gap-2 sm:gap-3 justify-center ${isPhoneTable ? 'compact-action-row' : ''}`}
           style={{
             left: '50%',
-            bottom: isPhoneTable ? 'clamp(106px, 25vh, 128px)' : 'clamp(235px, 33vh, 270px)',
+            bottom: isPhoneTable ? 'clamp(92px, 23vh, 118px)' : 'clamp(235px, 33vh, 270px)',
             width: isPhoneTable ? 'min(64vw, 320px)' : 'min(92vw, 620px)',
             minHeight: '50px',
             transform: 'translateX(-50%)',

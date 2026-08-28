@@ -18,6 +18,7 @@ interface PlayerHandProps {
 
 export default function PlayerHand({ cards, playableCardIds, onPlayCard, disabled, activeSide = 'LIGHT', compact = false }: PlayerHandProps) {
   const { playHover, playPlayCard } = useAudio();
+  const cardRadius = compact ? 11 : 18;
   const handSpacing = compact
     ? (cards.length > 9 ? '-space-x-6' : cards.length > 6 ? '-space-x-4' : '-space-x-2')
     : cards.length > 10
@@ -38,7 +39,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
         glowColor={getCardGlowHsl(face.color)}
         backgroundColor={getCardBgHex(face.color)}
         colors={getCardGradientColors(face.color)}
-        borderRadius={18}
+        borderRadius={cardRadius}
         glowRadius={compact ? 18 : 28}
         className={`relative ${fill ? 'h-full w-full' : 'player-card-size'} rounded-2xl border-2 select-none transition-all backdrop-blur-sm opacity-100 ${
           isPlayable
@@ -48,7 +49,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
       >
         <div className={`absolute left-[10%] top-[7%] text-xs sm:text-sm card-corner-number ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
               <div className="bg-[#3b82f6]" />
               <div className="bg-[#10b981]" />
@@ -62,7 +63,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
         <div className="card-oval-insert w-[76%] h-[60%] flex items-center justify-center">
           {face.value === 'WILD' || face.value === 'WILD_DRAW_FOUR' || face.value === 'WILD_DRAW_FIVE' ? (
             <motion.div
-              className="h-12 w-12 rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45 sm:h-16 sm:w-16"
+              className="card-wild-symbol rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 rotate-45"
               animate={{ rotate: [45, 48, 45] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               style={{ willChange: 'transform' }}
@@ -73,7 +74,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
               <div className="bg-[#f59e0b]" />
             </motion.div>
           ) : (
-            <span className={`card-oval-value text-2xl sm:text-3xl md:text-5xl font-extrabold ${getCardValueColor(face.color)}`}>
+            <span className={`card-oval-value font-extrabold ${getCardValueColor(face.color)}`}>
               {getCardSymbol(face.value)}
             </span>
           )}
@@ -81,7 +82,7 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
 
         <div className={`absolute bottom-[7%] right-[10%] text-xs sm:text-sm card-corner-number rotate-180 ${face.color === 'WILD' ? 'text-white' : ''}`}>
           {face.value === 'WILD' ? (
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
+            <div className="card-wild-corner-symbol rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 border border-white/25">
               <div className="bg-[#ef4444]" />
               <div className="bg-[#3b82f6]" />
               <div className="bg-[#10b981]" />

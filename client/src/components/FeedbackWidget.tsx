@@ -41,6 +41,7 @@ export default function FeedbackWidget() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isGameContext = pathname === '/game' || Boolean(gameState || roomState);
 
   const gameContext = useMemo(() => {
     if (!gameState && !roomState) return null;
@@ -125,12 +126,16 @@ export default function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="font-display fixed bottom-5 left-5 z-[45] inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-red-100 shadow-2xl backdrop-blur-xl transition-all hover:border-red-400/60 hover:bg-red-600 sm:bottom-7 sm:left-7 sm:px-4"
+        className={`font-display fixed z-[45] inline-flex items-center justify-center rounded-full border border-white/10 bg-black/65 text-red-100 shadow-2xl backdrop-blur-xl transition-all hover:border-red-400/60 hover:bg-red-600 ${
+          isGameContext
+            ? 'bottom-5 left-5 h-11 w-11 p-0 sm:bottom-7 sm:left-7'
+            : 'bottom-5 left-5 h-11 gap-2 px-3 text-[10px] font-black uppercase tracking-[0.16em] sm:bottom-7 sm:left-7 sm:px-4'
+        }`}
         aria-label="Send feedback or report an issue"
         title="Feedback / Report issue"
       >
         <MessageSquareWarning className="h-4 w-4" />
-        <span className="hidden sm:inline">Feedback</span>
+        {!isGameContext && <span className="hidden sm:inline">Feedback</span>}
       </button>
 
       <AnimatePresence>

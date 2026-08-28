@@ -75,7 +75,7 @@ export default function Lobby() {
 
   const handleCreatePracticeRoom = () => {
     playSelect();
-    const practiceSeats = Math.min(4, Math.max(2, practicePlayerCount));
+    const practiceSeats = Math.min(8, Math.max(2, practicePlayerCount));
     createRoom({
       ...rules,
       stacking: true,
@@ -96,7 +96,7 @@ export default function Lobby() {
 
   const handleCreateCustom = () => {
     playSelect();
-    const customSeats = Math.min(4, Math.max(2, customPlayerCount));
+    const customSeats = Math.min(8, Math.max(2, customPlayerCount));
     createRoom({
       ...rules,
       stacking: true,
@@ -380,15 +380,15 @@ export default function Lobby() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="rounded-2xl border border-white/10 bg-white/[0.045] p-5">
                   <span className="font-display text-[13px] font-bold text-white uppercase tracking-[0.12em]">No. of players</span>
-                  <input
-                    type="number"
-                    min={2}
-                    max={4}
+                    <input
+                      type="number"
+                      min={2}
+                    max={8}
                     value={practicePlayerCount}
-                    onChange={e => setPracticePlayerCount(Math.min(4, Math.max(2, parseInt(e.target.value) || 4)))}
+                    onChange={e => setPracticePlayerCount(Math.min(8, Math.max(2, parseInt(e.target.value) || 4)))}
                     className="mt-4 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-4 text-center font-display text-2xl font-bold text-red-300 transition-colors focus:outline-none focus:border-red-400/60"
                   />
-                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">2 to 4 players · You + bots</p>
+                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">2 to 8 players · You + bots</p>
                 </label>
 
                 <label className="rounded-2xl border border-white/10 bg-white/[0.045] p-5">
@@ -512,12 +512,12 @@ export default function Lobby() {
                     <input
                       type="number"
                       min={2}
-                      max={4}
+                      max={8}
                       value={customPlayerCount}
-                      onChange={e => setCustomPlayerCount(Math.min(4, Math.max(2, parseInt(e.target.value) || 2)))}
+                      onChange={e => setCustomPlayerCount(Math.min(8, Math.max(2, parseInt(e.target.value) || 2)))}
                       className="mt-4 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-4 text-center font-display text-2xl font-bold text-red-300 transition-colors focus:outline-none focus:border-red-400/60"
                     />
-                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">2 to 4 players</p>
+                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">2 to 8 players</p>
                   </label>
 
                   <label className="rounded-2xl border border-white/10 bg-white/[0.045] p-5">

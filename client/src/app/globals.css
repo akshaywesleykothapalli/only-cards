@@ -142,36 +142,125 @@ body {
   font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
   font-weight: 700; /* Helvetica Neue Bold */
   color: #0b1a24;
-  font-size: 1.75rem; /* Increased from 1.5rem */
+  font-size: var(--card-center-font, 1.75rem); /* Increased from 1.5rem */
+  line-height: 1;
 }
 
 .card-corner-number {
   font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
   font-weight: 700; /* Helvetica Neue Bold */
-  font-size: 1.25rem; /* Increased from 1rem */
+  font-size: var(--card-corner-font, 1.25rem); /* Increased from 1rem */
+  line-height: 1;
 }
 
 .player-card-size,
 .table-card-size {
-  width: 4.5rem;
-  height: 7rem;
+  width: 4.9rem;
+  aspect-ratio: 7 / 10;
+  height: auto;
+  border-radius: calc(var(--card-width, 4.9rem) * 0.145) !important;
+  --card-width: 4.9rem;
+  --card-center-font: 1.95rem;
+  --card-corner-font: 0.95rem;
+  --card-wild-center-size: 2.45rem;
+  --card-wild-corner-size: 0.88rem;
+  --card-back-font: 0.95rem;
 }
 
 .opponent-card-size {
-  width: 4rem;
-  height: 6rem;
+  width: 4.2rem;
+  aspect-ratio: 7 / 10;
+  height: auto;
+  border-radius: calc(var(--card-width, 4.2rem) * 0.145) !important;
+  --card-width: 4.2rem;
+  --card-center-font: 1.65rem;
+  --card-corner-font: 0.82rem;
+  --card-wild-center-size: 2.1rem;
+  --card-wild-corner-size: 0.78rem;
+  --card-back-font: 0.82rem;
+}
+
+.card-wild-symbol {
+  width: var(--card-wild-center-size, 3.9rem);
+  height: var(--card-wild-center-size, 3.9rem);
+}
+
+.card-wild-corner-symbol {
+  width: var(--card-wild-corner-size, 1rem);
+  height: var(--card-wild-corner-size, 1rem);
+}
+
+.card-back-label {
+  font-size: var(--card-back-font, 1rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.opponent-mini-card {
+  isolation: isolate;
+}
+
+.opponent-mini-card-active {
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.08),
+    0 0 18px rgba(248, 113, 113, 0.28),
+    0 12px 28px rgba(0, 0, 0, 0.34);
+}
+
+.opponent-stack-card-active {
+  border: 1px solid transparent;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+}
+
+@keyframes opponent-edge-sweep {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(248, 113, 113, 0.08),
+      0 0 14px rgba(248, 113, 113, 0.2),
+      0 12px 28px rgba(0, 0, 0, 0.34);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(248, 113, 113, 0.12),
+      0 0 24px rgba(248, 113, 113, 0.36),
+      0 12px 28px rgba(0, 0, 0, 0.34);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .opponent-mini-card-active {
+    animation: opponent-edge-sweep 1.8s ease-in-out infinite;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .opponent-mini-card-active {
+    animation: opponent-edge-sweep 2.4s ease-in-out infinite;
+  }
 }
 
 @media (min-width: 640px) {
   .player-card-size,
   .table-card-size {
     width: 7rem;
-    height: 10rem;
+    --card-width: 7rem;
+    --card-center-font: 3rem;
+    --card-corner-font: 1.25rem;
+    --card-wild-center-size: 3.9rem;
+    --card-wild-corner-size: 1rem;
+    --card-back-font: 1.25rem;
   }
 
   .opponent-card-size {
     width: 7rem;
-    height: 10rem;
+    --card-width: 7rem;
+    --card-center-font: 3rem;
+    --card-corner-font: 1.25rem;
+    --card-wild-center-size: 3.9rem;
+    --card-wild-corner-size: 1rem;
+    --card-back-font: 1.25rem;
   }
 }
 
@@ -188,37 +277,32 @@ body {
 
   .player-card-size {
     width: 4.35rem;
-    height: 6.22rem;
+    --card-width: 4.35rem;
+    --card-center-font: 1.86rem;
+    --card-corner-font: 0.78rem;
+    --card-wild-center-size: 2.42rem;
+    --card-wild-corner-size: 0.72rem;
+    --card-back-font: 0.78rem;
   }
 
   .table-card-size {
     width: 3.85rem;
-    height: 5.5rem;
+    --card-width: 3.85rem;
+    --card-center-font: 1.65rem;
+    --card-corner-font: 0.7rem;
+    --card-wild-center-size: 2.15rem;
+    --card-wild-corner-size: 0.66rem;
+    --card-back-font: 0.7rem;
   }
 
   .opponent-card-size {
     width: 3.15rem;
-    height: 4.5rem;
-  }
-
-  .card-corner-number {
-    font-size: 0.78rem;
-    line-height: 1;
-  }
-
-  .card-oval-value {
-    font-size: 1.52rem;
-    line-height: 1;
-  }
-
-  .table-card-size .card-oval-value {
-    font-size: 1.35rem;
-  }
-
-  .player-card-size,
-  .table-card-size,
-  .opponent-card-size {
-    border-radius: 1.05rem !important;
+    --card-width: 3.15rem;
+    --card-center-font: 1.35rem;
+    --card-corner-font: 0.58rem;
+    --card-wild-center-size: 1.75rem;
+    --card-wild-corner-size: 0.58rem;
+    --card-back-font: 0.58rem;
   }
 
   .player-card-size .card-oval-insert,
@@ -232,9 +316,9 @@ body {
 
   .opponent-card-size .card-back-label,
   .table-card-size .card-back-label {
-    font-size: 0.78rem !important;
+    font-size: var(--card-back-font, 0.78rem) !important;
     line-height: 1 !important;
-    letter-spacing: -0.06em !important;
+    letter-spacing: 0 !important;
   }
 
   .compact-action-row {

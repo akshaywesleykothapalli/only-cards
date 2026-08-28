@@ -21,6 +21,11 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const CLIENT_APP_URL = process.env.CLIENT_APP_URL || 'http://localhost:3000';
+
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
 
 // Middlewares
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
@@ -339,13 +344,36 @@ app.get('/', (_req, res) => {
   res.status(200).json({
     service: 'Only Cards game server',
     status: 'online',
-    frontend: 'http://localhost:3000',
-    health: '/health'
+    frontend: CLIENT_APP_URL,
+    health: '/health',
+    ready: '/ready'
   });
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).send('AAA Server Online');
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    status: 'online',
+    service: 'Only Cards game server',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/ready', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'ready',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Readiness check failed:', error);
+    res.status(503).json({
+      status: 'not_ready',
+      database: 'unavailable',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Boot servers
