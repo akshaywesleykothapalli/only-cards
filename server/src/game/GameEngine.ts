@@ -24,7 +24,7 @@ export class GameEngine {
       drawPileCount: 0,
       activeColor: 'RED',
       activeValue: '0',
-      direction: 'CW',
+      direction: 'CCW',
       drawStackCount: 0,
       winnerId: null,
       rules,
@@ -60,7 +60,7 @@ export class GameEngine {
     this.deck = createDeck(this.state.rules.flipMode);
     this.state.status = 'PLAYING';
     this.state.winnerId = null;
-    this.state.direction = 'CW';
+    this.state.direction = 'CCW';
     this.state.activeSide = 'LIGHT';
     this.state.drawStackCount = 0;
     this.state.currentPlayerIndex = 0;
@@ -122,8 +122,8 @@ export class GameEngine {
       this.addLog('SKIP', `${activePlayer.name}'s first turn is skipped.`);
       this.advanceTurn();
     } else if (face.value === 'REVERSE') {
-      this.state.direction = 'CCW';
-      this.addLog('REVERSE', `Play direction reversed to Counter-Clockwise.`);
+      this.state.direction = this.state.direction === 'CW' ? 'CCW' : 'CW';
+      this.addLog('REVERSE', `Play direction reversed.`);
       // If 2 players, reverse works like skip, so the first dealer goes again or skipped.
       if (this.state.players.length === 2) {
         this.advanceTurn();

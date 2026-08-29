@@ -115,7 +115,7 @@ export function SharedNavbar({
   });
 
   return (
-    <nav className="fixed top-0 left-0 right-0 w-full max-w-6xl mx-auto flex items-center z-50 px-3 py-3 sm:px-4 md:py-4 lg:px-0">
+    <nav className="font-display fixed top-0 left-0 right-0 w-full max-w-6xl mx-auto flex items-center z-50 px-3 py-3 sm:px-4 md:py-4 lg:px-0">
       <SpotlightNavbar
         className="pt-0"
         fullWidth={true}
@@ -133,7 +133,7 @@ export function SharedNavbar({
           )}
           <div className="flex min-w-0 items-center gap-2">
             <BrandMark size="sm" />
-            <span className="flex items-center gap-1 truncate text-base font-black tracking-tight text-white sm:text-lg">
+            <span className="flex items-center gap-1 truncate text-base font-black uppercase tracking-tight text-white sm:text-lg">
               ONLY <span className="text-red-500">CARDS</span>
             </span>
           </div>
@@ -176,7 +176,7 @@ export function SharedNavbar({
                   e.preventDefault();
                   handleItemClick(item, idx);
                 }}
-                className={`px-4 py-2 text-sm font-black uppercase tracking-wider transition-colors duration-200 rounded-full ${
+                className={`px-4 py-2 text-sm font-black uppercase tracking-[0.08em] transition-colors duration-200 rounded-full ${
                   item.label === 'Friends' && isGuestUser
                     ? 'text-gray-500 hover:text-red-300 border border-white/5 bg-white/[0.02]'
                     : 'text-white hover:text-red-400'
@@ -208,7 +208,7 @@ export function SharedNavbar({
               title="Profile settings"
             >
               <User className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-black text-red-400 uppercase tracking-wider">{user.username}</span>
+              <span className="text-sm font-black text-red-400 uppercase tracking-[0.08em]">{user.username}</span>
             </button>
           )}
           <button
@@ -259,7 +259,7 @@ export function SharedNavbar({
                     e.preventDefault();
                     handleItemClick(item, idx);
                   }}
-                  className={`rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-wider transition-colors ${
+                  className={`rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-[0.08em] transition-colors ${
                     item.label === 'Friends' && isGuestUser
                       ? 'border border-white/5 bg-white/[0.02] text-gray-500'
                       : 'text-white hover:bg-white/[0.06] hover:text-red-300'

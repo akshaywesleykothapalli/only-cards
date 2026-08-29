@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useGameStore } from '../store/useGameStore';
 import { useAudio } from '../hooks/useAudio';
 import { MatchRules } from 'cards-shared';
-import { Trophy, Shield, Users, Swords, X, DoorOpen, PlusCircle } from 'lucide-react';
+import { Trophy, Shield, Users, X, DoorOpen, PlusCircle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ShinyText from './ShinyText';
 import { SharedNavbar } from './SharedNavbar';
@@ -199,38 +199,33 @@ export default function Lobby() {
         </p>
 
         {/* Game Mode Cards */}
-        <div className="ready-mode-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl mb-12">
+        <div className="ready-mode-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 w-full max-w-5xl mb-12">
           {/* Ranked Match */}
-          <motion.div
+          <motion.button
+            type="button"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            whileHover={{ y: -8 }}
-            className="ready-custom-room-card group relative glass-card p-8 rounded-3xl flex flex-col gap-4 text-left cursor-pointer border border-white/10 overflow-hidden"
+            whileHover={{ y: -5 }}
+            whileTap={{ scale: 0.985 }}
+            onMouseEnter={playHover}
             onClick={() => { playSelect(); joinQueue(); }}
+            className="ready-custom-room-card group glass-card relative flex min-h-[13rem] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-green-300/38 bg-white/[0.035] p-7 text-left font-sans shadow-[0_18px_48px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.07)] transition-all hover:-translate-y-1 hover:border-green-200/65 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_rgba(0,0,0,0.38),0_0_34px_rgba(34,197,94,0.10)] focus:outline-none focus:ring-2 focus:ring-green-200/35 sm:p-8"
           >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-green-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              initial={false}
-            />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-100/55 to-transparent" />
             <div className="relative z-10 flex items-start justify-between">
-              <motion.div
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center text-green-400 border border-green-500/30"
-                whileHover={{ scale: 1.1, rotate: -5 }}
-              >
-                <Trophy className="w-7 h-7" />
-              </motion.div>
-              <motion.span
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-                className="text-xs font-black text-green-400 bg-green-500/20 px-3 py-1 rounded-full border border-green-500/30"
-              >
-                COMPETITIVE
-              </motion.span>
+              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-green-400/30 bg-gradient-to-br from-green-500/25 to-black/20 text-green-300 shadow-inner shadow-white/5 transition-colors group-hover:border-green-200/50 group-hover:text-green-100">
+                <Trophy className="h-6 w-6" />
+              </div>
+              <span className="rounded-full border border-green-300/20 bg-green-400/10 px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-green-200/80">Ranked</span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-green-300 transition-colors">RANKED MATCH</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">Compete globally and climb the score ladder</p>
+              <h3 className="mb-2 text-xl font-black uppercase tracking-wider text-white transition-colors group-hover:text-green-200">Ranked Match</h3>
+              <p className="max-w-[16rem] text-sm font-semibold leading-relaxed text-gray-400 transition-colors group-hover:text-gray-300">Compete globally and climb the score ladder.</p>
+            </div>
+            <div className="relative z-10 mt-5 flex items-center justify-between rounded-full border border-green-200/20 bg-black/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-green-100 transition-colors group-hover:bg-green-400/10">
+              <span>Play now</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </div>
             {isQueued && (
               <motion.div className="relative z-10 flex items-center gap-2 text-green-400 text-xs font-black uppercase tracking-wider">
@@ -242,96 +237,65 @@ export default function Lobby() {
                 Searching...
               </motion.div>
             )}
-            <motion.div
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-green-400 to-transparent"
-              initial={{ scaleX: 0 }}
-              whileHover={{ scaleX: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{ originX: 0 }}
-            />
-          </motion.div>
+          </motion.button>
 
           {/* Practice AI */}
-          <motion.div
+          <motion.button
+            type="button"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            whileHover={{ y: -8 }}
-            className="group relative glass-card p-8 rounded-3xl flex flex-col gap-4 text-left cursor-pointer border border-white/10 overflow-hidden"
+            whileHover={{ y: -5 }}
+            whileTap={{ scale: 0.985 }}
+            onMouseEnter={playHover}
+            className="group glass-card relative flex min-h-[13rem] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-red-300/38 bg-white/[0.035] p-7 text-left font-sans shadow-[0_18px_48px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.07)] transition-all hover:-translate-y-1 hover:border-red-200/65 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_rgba(0,0,0,0.38),0_0_34px_rgba(239,68,68,0.12)] focus:outline-none focus:ring-2 focus:ring-red-200/40 sm:p-8"
             onClick={handleOpenPracticeSetup}
           >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              initial={false}
-            />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-100/55 to-transparent" />
             <div className="relative z-10 flex items-start justify-between">
-              <motion.div
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-500/10 flex items-center justify-center text-red-400 border border-red-500/30"
-                whileHover={{ scale: 1.1, rotate: -5 }}
-              >
-                <Shield className="w-7 h-7" />
-              </motion.div>
-              <motion.span
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-                className="text-xs font-black text-red-400 bg-red-500/20 px-3 py-1 rounded-full border border-red-500/30"
-              >
-                TRAINING
-              </motion.span>
+              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-red-400/30 bg-gradient-to-br from-red-500/25 to-black/20 text-red-300 shadow-inner shadow-white/5 transition-colors group-hover:border-red-200/50 group-hover:text-red-100">
+                <Shield className="h-6 w-6" />
+              </div>
+              <span className="rounded-full border border-red-300/20 bg-red-400/10 px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-red-200/80">Practice</span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-red-300 transition-colors">PRACTICE AI</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">Train against tactical AI opponents</p>
+              <h3 className="mb-2 text-xl font-black uppercase tracking-wider text-white transition-colors group-hover:text-red-200">Practice AI</h3>
+              <p className="max-w-[16rem] text-sm font-semibold leading-relaxed text-gray-400 transition-colors group-hover:text-gray-300">Train against tactical AI opponents.</p>
             </div>
-            <motion.div
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-400 to-transparent"
-              initial={{ scaleX: 0 }}
-              whileHover={{ scaleX: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{ originX: 0 }}
-            />
-          </motion.div>
+            <div className="relative z-10 mt-5 flex items-center justify-between rounded-full border border-red-200/20 bg-black/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-red-100 transition-colors group-hover:bg-red-400/10">
+              <span>Set up</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </div>
+          </motion.button>
 
           {/* Custom Room */}
-          <motion.div
+          <motion.button
+            type="button"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            whileHover={{ y: -8 }}
-            className="group relative glass-card p-8 rounded-3xl flex flex-col gap-4 text-left cursor-pointer border border-white/10 overflow-hidden"
+            whileHover={{ y: -5 }}
+            whileTap={{ scale: 0.985 }}
+            onMouseEnter={playHover}
+            className="group glass-card relative flex min-h-[13rem] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-blue-300/38 bg-white/[0.035] p-7 text-left font-sans shadow-[0_18px_48px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.07)] transition-all hover:-translate-y-1 hover:border-blue-200/65 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_rgba(0,0,0,0.38),0_0_34px_rgba(59,130,246,0.12)] focus:outline-none focus:ring-2 focus:ring-blue-200/40 sm:p-8"
             onClick={() => { playSelect(); setShowCustomModal(true); }}
           >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              initial={false}
-            />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-100/55 to-transparent" />
             <div className="relative z-10 flex items-start justify-between">
-              <motion.div
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/30 to-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/30"
-                whileHover={{ scale: 1.1, rotate: -5 }}
-              >
-                <Users className="w-7 h-7" />
-              </motion.div>
-              <motion.span
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-                className="text-xs font-black text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/30"
-              >
-                CUSTOM
-              </motion.span>
+              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-blue-400/30 bg-gradient-to-br from-blue-500/25 to-black/20 text-blue-300 shadow-inner shadow-white/5 transition-colors group-hover:border-blue-200/50 group-hover:text-blue-100">
+                <Users className="h-6 w-6" />
+              </div>
+              <span className="rounded-full border border-blue-300/20 bg-blue-400/10 px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-blue-200/80">Private</span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black text-white tracking-wider mb-2 uppercase group-hover:text-blue-300 transition-colors">CUSTOM ROOM</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">Create or join private rooms with friends</p>
+              <h3 className="mb-2 text-xl font-black uppercase tracking-wider text-white transition-colors group-hover:text-blue-200">Custom Room</h3>
+              <p className="max-w-[16rem] text-sm font-semibold leading-relaxed text-gray-400 transition-colors group-hover:text-gray-300">Create or join private rooms with friends.</p>
             </div>
-            <motion.div
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-blue-400 to-transparent"
-              initial={{ scaleX: 0 }}
-              whileHover={{ scaleX: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{ originX: 0 }}
-            />
-          </motion.div>
+            <div className="relative z-10 mt-5 flex items-center justify-between rounded-full border border-blue-200/20 bg-black/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-blue-100 transition-colors group-hover:bg-blue-400/10">
+              <span>Open room</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </div>
+          </motion.button>
         </div>
 
       </div>

@@ -24,6 +24,17 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
     : cards.length > 10
       ? '-space-x-6 sm:-space-x-8 md:-space-x-12'
       : '-space-x-4 sm:-space-x-6 md:-space-x-10';
+  const handCenter = (cards.length - 1) / 2;
+  const rotationStep = compact
+    ? (cards.length > 10 ? 0.45 : cards.length > 7 ? 0.65 : 0.9)
+    : (cards.length > 10 ? 0.7 : cards.length > 7 ? 1 : 1.35);
+  const maxRotation = compact
+    ? (cards.length > 10 ? 3.8 : cards.length > 7 ? 5 : 7)
+    : (cards.length > 10 ? 6 : cards.length > 7 ? 8 : 10);
+  const getCardRotation = (index: number) => {
+    const rotation = (index - handCenter) * rotationStep;
+    return Math.max(-maxRotation, Math.min(maxRotation, rotation));
+  };
 
   const getActiveFace = (card: Card) => {
     return activeSide === 'LIGHT' ? card.lightFace : card.darkFace;
@@ -117,16 +128,17 @@ export default function PlayerHand({ cards, playableCardIds, onPlayCard, disable
         {cards.map((card, index) => {
           const face = getActiveFace(card);
           const isPlayable = playableCardIds.includes(card.id) && !disabled;
+          const cardRotation = getCardRotation(index);
 
           return (
             <motion.div
               key={card.id}
-              initial={{ y: 80, opacity: 0, rotate: -5 + index * 2 }}
-              animate={{ y: 0, opacity: 1, rotate: -5 + index * 2 }}
+              initial={{ y: 80, opacity: 0, rotate: cardRotation }}
+              animate={{ y: 0, opacity: 1, rotate: cardRotation }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
               whileHover={{
                 y: compact ? -12 : -35,
-                rotate: -5 + index * 2,
+                rotate: cardRotation,
                 scale: compact ? 1.04 : 1.08,
                 zIndex: 50,
                 transition: { duration: 0.2, ease: 'easeOut' }

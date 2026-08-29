@@ -85,9 +85,9 @@ const getOpponentSeatLayout = (count: number, compact = false, largeTable = fals
       [largeLeftMiddle, largeRightMiddle],
       [largeTopCenter, largeLeftMiddle, largeRightMiddle],
       [largeTopLeft, largeTopRight, largeLeftMiddle, largeRightMiddle],
-      [largeTopCenter, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
-      [largeTopLeft, largeTopRight, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
-      [largeTopLeft, largeTopCenter, largeTopRight, largeLeftUpper, largeRightUpper, largeLeftLowerSide, largeRightLowerSide],
+      [largeLeftLowerSide, largeLeftUpper, largeTopCenter, largeRightUpper, largeRightLowerSide],
+      [largeLeftLowerSide, largeLeftUpper, largeTopLeft, largeTopRight, largeRightUpper, largeRightLowerSide],
+      [largeLeftLowerSide, largeLeftUpper, largeTopLeft, largeTopCenter, largeTopRight, largeRightUpper, largeRightLowerSide],
     ];
 
     return largeLayouts[Math.min(count, largeLayouts.length - 1)].map(seat => ({
@@ -394,14 +394,20 @@ export default function GameTable() {
     p => p.id !== user?.id && p.cards.length === 2
   );
 
-  const orderedOpponents: Player[] = [];
-  if (myIndex !== -1) {
+  const getViewRelativeOpponentOrder = () => {
+    if (myIndex === -1) return gameState.players.filter(p => p.id !== user?.id);
+
     const numPlayers = gameState.players.length;
-    for (let i = 1; i < numPlayers; i++) {
-      const idx = (myIndex + i) % numPlayers;
-      orderedOpponents.push(gameState.players[idx]);
-    }
-  }
+    const turnStep = gameState.direction === 'CW' ? 1 : -1;
+
+    return Array.from({ length: numPlayers - 1 }, (_, i) => {
+      const nextTurnOffset = turnStep * (i + 1);
+      const idx = (myIndex + nextTurnOffset + numPlayers) % numPlayers;
+      return gameState.players[idx];
+    });
+  };
+
+  const orderedOpponents = getViewRelativeOpponentOrder();
   const opponentSeats: OpponentSeat[] = getOpponentSeatLayout(orderedOpponents.length, isPhoneTable, isLargeTable).map((seat, index) => ({
     ...seat,
     player: orderedOpponents[index],
@@ -496,11 +502,11 @@ export default function GameTable() {
 
   const triggerLastCardActionCooldown = () => {
     setLastCardActionCoolingDown(true);
-    window.setTimeout(() => setLastCardActionCoolingDown(false), 900);
+    window.setTimeout(() => setLastCardActionCoolingDown(false), 350);
   };
 
-  const actionCardClass = (enabled: boolean, active = false) =>
-    `grid h-12 w-9 place-items-center rounded-lg border text-xs font-black shadow-xl transition-all sm:h-14 sm:w-10 ${
+  const actionCardClass = (enabled: boolean, active = false, compactAction = false) =>
+    `${compactAction ? 'h-11 min-w-[7.2rem] gap-1.5 rounded-full px-4 text-[9px]' : 'h-12 min-w-[8.8rem] gap-2 rounded-xl px-4 text-[10px] sm:h-14 sm:min-w-[9.6rem]'} inline-flex touch-manipulation items-center justify-center border font-display font-black uppercase tracking-[0.12em] shadow-xl transition-all active:scale-95 ${
       active
         ? 'border-emerald-300/70 bg-emerald-500/25 text-emerald-100 ring-2 ring-emerald-300/30'
         : enabled
@@ -516,6 +522,58 @@ export default function GameTable() {
 
   const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
   const tableCardRadius = isPhoneTable ? 10 : 16;
+  const handleCallLastCardAction = () => {
+    if (!canCallLastCard || lastCardActionCoolingDown) return;
+    triggerLastCardActionCooldown();
+    audio.playLastCardCall();
+    callLastCard();
+  };
+  const handleChallengeLastCardAction = () => {
+    if (!challengeableOpponent || lastCardActionCoolingDown) return;
+    triggerLastCardActionCooldown();
+    challengeLastCard(challengeableOpponent.id);
+  };
+  const renderLastCardActions = (compactAction = false) => (
+    <>
+      <button
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse') return;
+          handleCallLastCardAction();
+        }}
+        onClick={handleCallLastCardAction}
+        disabled={!canCallLastCard || lastCardActionCoolingDown}
+        aria-label={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
+        aria-pressed={hasCalledLastCard}
+        title={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
+        style={{ touchAction: 'manipulation' }}
+        className={actionCardClass(canCallLastCard && !lastCardActionCoolingDown, hasCalledLastCard, compactAction)}
+      >
+        <span className={compactAction ? 'text-sm leading-none' : 'text-base leading-none'}>{hasCalledLastCard ? '✓' : '1'}</span>
+        <span>{compactAction ? 'Call' : 'Call Last'}</span>
+      </button>
+      <button
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse') return;
+          handleChallengeLastCardAction();
+        }}
+        onClick={handleChallengeLastCardAction}
+        disabled={!challengeableOpponent || lastCardActionCoolingDown}
+        aria-label="Challenge last card"
+        title={
+          challengeableOpponent
+            ? `Challenge ${challengeableOpponent.name}`
+            : lastCardThreatOpponent
+              ? `${lastCardThreatOpponent.name} is close to LAST CARD`
+              : 'No LAST CARD threat'
+        }
+        style={{ touchAction: 'manipulation' }}
+        className={actionCardClass(Boolean(challengeableOpponent) && !lastCardActionCoolingDown, Boolean(challengeableOpponent), compactAction)}
+      >
+        <Zap className={compactAction ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+        <span>{compactAction ? 'Challenge' : 'Challenge'}</span>
+      </button>
+    </>
+  );
 
   const getActiveFace = (card: Card) => {
     return gameState.activeSide === 'LIGHT' ? card.lightFace : card.darkFace;
@@ -823,7 +881,7 @@ export default function GameTable() {
             </motion.div>
 
           {/* Stacking indicator overlay */}
-          {gameState.drawStackCount > 0 && (
+          {gameState.drawStackCount > 0 && !isPhoneTable && (
             <motion.div
               initial={{ scale: 0.9, y: 5, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -835,6 +893,36 @@ export default function GameTable() {
           )}
         </motion.div>
         {/* END CENTER - Draw and Discard Piles */}
+
+        {isPhoneTable && (
+          <div
+            className="absolute pointer-events-auto z-40 flex flex-col gap-2"
+            style={{
+              left: 'clamp(190px, 31vw, 290px)',
+              top: '49.5%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            {renderLastCardActions(true)}
+          </div>
+        )}
+
+        {isPhoneTable && gameState.drawStackCount > 0 && (
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, x: 8 }}
+            animate={{ scale: 1, opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute z-40 flex items-center gap-2 rounded-full border border-red-500/35 bg-red-950/70 px-3 py-2 font-display text-[9px] font-black uppercase tracking-[0.14em] text-red-100 shadow-[0_0_20px_rgba(239,68,68,0.22)] backdrop-blur-xl"
+            style={{
+              right: 'clamp(190px, 31vw, 290px)',
+              top: '49.5%',
+              transform: 'translate(50%, -50%)',
+            }}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            <span>Stack +{gameState.drawStackCount}</span>
+          </motion.div>
+        )}
 
         {/* OPPONENT SEATS - Responsive around-the-table positioning */}
         {opponentSeats.map((seat, index) => {
@@ -960,40 +1048,7 @@ export default function GameTable() {
           {me && !isPhoneTable && (
             <div className="absolute -top-32 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2 sm:-top-36">
               <div className="flex items-end justify-center gap-2">
-                <button
-                  onClick={() => {
-                    if (!canCallLastCard || lastCardActionCoolingDown) return;
-                    triggerLastCardActionCooldown();
-                    audio.playLastCardCall();
-                    callLastCard();
-                  }}
-                  disabled={!canCallLastCard || lastCardActionCoolingDown}
-                  aria-label={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
-                  aria-pressed={hasCalledLastCard}
-                  title={hasCalledLastCard ? 'Last card already called' : 'Call last card'}
-                  className={actionCardClass(canCallLastCard && !lastCardActionCoolingDown, hasCalledLastCard)}
-                >
-                  <span className="text-lg leading-none">{hasCalledLastCard ? '✓' : '1'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    if (!challengeableOpponent || lastCardActionCoolingDown) return;
-                    triggerLastCardActionCooldown();
-                    challengeLastCard(challengeableOpponent.id);
-                  }}
-                  disabled={!challengeableOpponent || lastCardActionCoolingDown}
-                  aria-label="Challenge last card"
-                  title={
-                    challengeableOpponent
-                      ? `Challenge ${challengeableOpponent.name}`
-                      : lastCardThreatOpponent
-                        ? `${lastCardThreatOpponent.name} is close to LAST CARD`
-                        : 'No LAST CARD threat'
-                  }
-                  className={actionCardClass(Boolean(challengeableOpponent) && !lastCardActionCoolingDown, Boolean(challengeableOpponent))}
-                >
-                  <Zap className="h-5 w-5" />
-                </button>
+                {renderLastCardActions(false)}
               </div>
               <motion.div
                 initial={{ opacity: 0, y: 8 }}

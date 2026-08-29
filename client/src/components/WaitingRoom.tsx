@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { useAudio } from '../hooks/useAudio';
 import { AiDifficulty } from 'cards-shared';
-import { Shield, Send, Plus, UserMinus, Play } from 'lucide-react';
+import { Bot, CheckCircle2, Circle, Send, Plus, UserMinus, Play, Shield, UserRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ShinyText from './ShinyText';
 import { SharedNavbar } from './SharedNavbar';
@@ -40,7 +40,6 @@ export default function WaitingRoom() {
   const allReady = roomState.players.every(p => p.isReady);
   const minPlayers = roomState.players.length >= 2;
   const selectedPlayerCount = roomState.rules.maxPlayers;
-  const isCustomRoom = Boolean(selectedPlayerCount);
   const isPracticeRoom = Boolean(roomState.rules.practiceMode);
   const roomHasExpectedPlayers = selectedPlayerCount ? roomState.players.length >= selectedPlayerCount : true;
   const openSlots = selectedPlayerCount ? Math.max(0, selectedPlayerCount - roomState.players.length) : 0;
@@ -118,49 +117,73 @@ export default function WaitingRoom() {
 
         {/* Description */}
         <p className="text-sm sm:text-base text-gray-400 max-w-2xl leading-relaxed mb-10 sm:mb-12 font-medium">
-          {selectedPlayerCount
-            ? `Share the room code, wait for ${selectedPlayerCount} players, then everyone marks ready before the host starts.`
-            : isPracticeRoom
+          {isPracticeRoom
             ? "Practice against tuned AI bots. Start when you're ready."
+            : selectedPlayerCount
+            ? `Share the room code, wait for ${selectedPlayerCount} players, then everyone marks ready before the host starts.`
             : "Invite friends or add AI opponents. Mark yourself as ready when you're prepared to begin the match."}
         </p>
 
         {/* Players Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl mb-8">
+        <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 mb-8">
           {roomState.players.map((player, idx) => {
             const isPlayerHost = roomState.hostId === player.id;
+            const isCurrentUser = player.id === user?.id;
             return (
               <motion.div
                 key={player.id}
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                className={`glass-card p-6 rounded-2xl flex flex-col items-center gap-4 text-center border ${
-                  player.isReady ? 'border-red-500/30' : 'border-white/10'
+                transition={{ delay: idx * 0.06 }}
+                className={`glass-card relative overflow-hidden rounded-2xl border p-4 text-left ${
+                  player.isReady ? 'border-red-400/35 bg-red-500/[0.035]' : 'border-white/10'
                 }`}
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-950 to-slate-900 flex items-center justify-center text-xl font-black text-red-400 border border-red-500/20">
-                  {player.isAi ? '🤖' : player.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <div className="text-base font-black text-white flex items-center gap-2 justify-center">
-                    {player.name}
-                    {isPlayerHost && <Shield className="w-4 h-4 text-red-400" />}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-300/35 to-transparent" />
+                <div className="flex min-h-[5.75rem] items-center gap-4">
+                  <div className={`grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl border ${
+                    player.isReady
+                      ? 'border-red-300/40 bg-red-500/16 text-red-100'
+                      : 'border-white/10 bg-white/[0.045] text-gray-300'
+                  }`}>
+                    {player.isAi ? <Bot className="h-7 w-7" /> : <UserRound className="h-7 w-7" />}
                   </div>
-                  <div className="text-xs text-gray-500 font-black uppercase tracking-wider mt-1">
-                    {player.isAi ? `${player.aiDifficulty || 'Medium'} IQ Bot` : 'Player'}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <h3 className="truncate text-base font-black text-white">{player.name}</h3>
+                      {isPlayerHost && <Shield className="h-4 w-4 flex-shrink-0 text-red-300" />}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+                        {player.isAi ? `${player.aiDifficulty || 'Medium'} bot` : isPlayerHost ? 'Host' : 'Player'}
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+                        player.isReady
+                          ? 'border-red-300/30 bg-red-500/14 text-red-100'
+                          : 'border-white/10 bg-white/[0.035] text-gray-500'
+                      }`}>
+                        {player.isReady ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                        {player.isReady ? 'Ready' : 'Not ready'}
+                      </span>
+                    </div>
                   </div>
+                  {isCurrentUser && (
+                    <button
+                      type="button"
+                      onClick={() => { playSelect(); toggleReady(); }}
+                      className={`flex-shrink-0 rounded-full border px-4 py-2 font-display text-[10px] font-black uppercase tracking-[0.12em] transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                        me?.isReady
+                          ? 'border-white/10 bg-white/[0.04] text-gray-300 hover:text-white'
+                          : 'border-red-300/40 bg-red-500/20 text-red-50 shadow-lg shadow-red-500/10 hover:bg-red-500/30'
+                      }`}
+                    >
+                      {me?.isReady ? 'Unready' : 'Ready'}
+                    </button>
+                  )}
                 </div>
-                <span className={`text-xs font-black px-4 py-2 rounded-full uppercase tracking-wider ${
-                  player.isReady
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-white/10 text-gray-400'
-                }`}>
-                  {player.isReady ? 'Ready' : 'Not Ready'}
-                </span>
                 {isPracticeRoom && player.isAi && (
-                  <div className="w-full rounded-2xl border border-white/10 bg-black/25 p-3">
-                    <div className="mb-2 flex items-center justify-between">
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
                       <span className="font-display text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Bot IQ</span>
                       <span className="rounded-full border border-red-400/25 bg-red-500/10 px-2.5 py-1 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-red-200">
                         {player.aiDifficulty || 'Medium'}
@@ -185,8 +208,10 @@ export default function WaitingRoom() {
                 )}
                 {isHost && player.isAi && !isPracticeRoom && (
                   <button
+                    type="button"
                     onClick={() => handleRemovePlayer(player.id)}
-                    className="p-2 rounded-xl bg-red-950/20 text-red-500 hover:bg-red-600 hover:text-white border border-red-900/30 transition-all"
+                    className="absolute right-3 top-3 rounded-xl border border-red-900/30 bg-red-950/20 p-2 text-red-500 transition-all hover:bg-red-600 hover:text-white"
+                    aria-label={`Remove ${player.name}`}
                   >
                     <UserMinus className="w-4 h-4" />
                   </button>
@@ -201,12 +226,12 @@ export default function WaitingRoom() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: (roomState.players.length + idx) * 0.08 }}
-              className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center border border-dashed border-white/15 opacity-75"
+              className="glass-card flex min-h-[7.75rem] items-center gap-4 rounded-2xl border border-dashed border-white/15 p-4 text-left opacity-75"
             >
-              <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center text-2xl font-black text-gray-600 border border-white/10">
+              <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-2xl font-black text-gray-600">
                 +
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-base font-black text-gray-400">Open Seat</div>
                 <div className="text-xs text-gray-600 font-black uppercase tracking-wider mt-1">Waiting to join</div>
               </div>
@@ -215,39 +240,27 @@ export default function WaitingRoom() {
           
           {/* Add AI Button */}
           {canAddAi && (
-            <motion.div
+            <motion.button
+              type="button"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: roomState.players.length * 0.1 }}
               onClick={handleAddAi}
-              className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer hover:scale-[1.02] transition-transform border-dashed border-white/20 hover:border-red-500/40"
+              className="glass-card flex min-h-[7.75rem] cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-white/20 p-4 text-left transition-all hover:scale-[1.01] hover:border-red-500/40"
             >
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
-                <Plus className="w-8 h-8" />
+              <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-400">
+                <Plus className="h-7 w-7" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-base font-black text-white">Add AI</div>
                 <div className="text-xs text-gray-500 font-black uppercase tracking-wider mt-1">Opponent</div>
               </div>
-            </motion.div>
+            </motion.button>
           )}
         </div>
 
         {/* Action Buttons */}
         <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:gap-4">
-          {(!isCustomRoom || !isHost || !me?.isReady) && (
-            <button
-              onClick={() => { playSelect(); toggleReady(); }}
-              className={`flex-grow py-4 rounded-full font-black uppercase tracking-wider text-sm hover:scale-[1.02] active:scale-[0.98] transition-all ${
-                me?.isReady
-                  ? 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
-                  : 'btn-arena-primary text-white'
-              }`}
-            >
-              {me?.isReady ? 'UNREADY' : 'MARK READY'}
-            </button>
-          )}
-
           {isHost && (
             <button
               onClick={() => { playSelect(); startGame(); }}

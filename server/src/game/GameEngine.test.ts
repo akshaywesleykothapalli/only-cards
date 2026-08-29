@@ -91,6 +91,7 @@ describe('GameEngine State Machine tests', () => {
     expect(state.players[1].cards.length).toBe(7);
     expect(state.discardPile.length).toBe(1);
     expect(state.activeColor).toBe(state.discardPile[0].lightFace.color);
+    expect(state.direction).toBe('CCW');
   });
 
   it('should block wild and draw-two cards from opening the center deck', () => {
